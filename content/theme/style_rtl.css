@@ -1,0 +1,47 @@
+body { direction:rtl; }
+.topblock h2 {
+  background-position: right;
+  padding-left: 10px;
+  padding-right: 30px;
+}
+#loading { margin-left:6px; margin-right:0px; }
+.bar-menu { text-align: left; }
+.bar-menu > * {
+  margin-right: 10px;
+  margin-left: unset;
+}
+
+.mtt-tab { margin-left:3px; margin-right:0px; border-top-right-radius:0px; border-top-left-radius:8px; }
+.mtt-tabs-new-button { border-top-right-radius:0px; border-top-left-radius:8px; }
+.mtt-tabs-select-button>span { transform:rotateY(180deg); }
+
+#task { padding-left:20px; padding-right:4px; }
+.mtt-taskbox-icon { left:2px; right:auto; transform:rotateY(180deg); }
+#newtask_adv { margin-left:0; margin-right:0.5rem; transform:rotateY(180deg); }
+.mtt-searchbox-icon.mtt-icon-search  { right:4px; left:auto; }
+.mtt-searchbox-icon.mtt-icon-cancelsearch { left:4px; right:auto; }
+
+#tagcloudbtn { margin-left:0; margin-right:auto; }
+
+.task-toggle { margin-left:2px; margin-right:0; transform:rotate(180deg); }
+.task-middle { margin-left:0; margin-right:5px; }
+.task-actions { margin-left:0; margin-right:5px; }
+
+.task-prio, .task-title, .task-date, .task-tags { display:inline-block; } /* TODO: fix this */
+
+.task-prio { margin-left:5px; margin-right:0; }
+.task-note-block { margin-left:0; margin-right:2px; padding-left:0; padding-right:19px;  background-position:right 0px;}
+.task-date { margin-left:0; margin-right:4px; }
+.duedate { margin-left:0; margin-right:5px; }
+.duedate-arrow { display:none; }
+.duedate:before { content:'\20\2190\20'; }
+
+#tagcloud { box-shadow:-1px 2px 5px rgba(0,0,0,0.5); }
+
+h3.page-title a.mtt-back-button { transform:rotate(180deg); }
+.form-row-short { margin-left:12px; margin-right:0; }
+.alltags-cell { padding-left:0; padding-right:5px; }
+
+.mtt-menu-container { box-shadow:-1px 2px 5px rgba(0,0,0,0.5);  }
+.mtt-menu-container .menu-icon { left:auto; right:6px; }
+li.mtt-menu-indicator .submenu-icon { left:6px; right:auto; transform:rotate(180deg); }
