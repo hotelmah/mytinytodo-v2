@@ -1,0 +1,28 @@
+{
+    "name": "hotelmah/mytinytodo-2",
+    "description": "MyTinyTodo v2",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "App\\": "App/"
+        }
+    },
+    "require": {
+        "php": ">=7.0.0",
+        "symfony/polyfill-intl-normalizer": "1.28",
+        "erusev/parsedown": "1.7.4",
+        "nikic/fast-route": "2.0.0-beta1",
+        "aplus/http": "^4.5"
+    },
+    "authors": [
+        {
+            "name": "Kevin Pereira",
+            "email": "kevin@kevinp.net",
+            "homepage": "https://github.com/hotelmah",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
