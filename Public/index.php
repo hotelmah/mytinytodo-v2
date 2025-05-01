@@ -84,7 +84,7 @@ if (Utility::accessToken() == '') {
 }
 
 if (!defined('MTT_DISABLE_EXT')) {
-    define('MTT_EXT', '../App/ext/');
+    define('MTT_EXT', '../ext/');
     Utility::loadExtensions();
 }
 
@@ -110,6 +110,10 @@ $_mttinfo = array();
 $dispatcher = simpleDispatcher(function (FastRoute\ConfigureRoutes $r) {
     $r->addRoute('GET', '/mytinytodo/', HomeController::class . '/index');
     $r->addRoute('GET', '/mytinytodo/api', ApiController::class . '/index');
+    $r->addRoute('GET', '/mytinytodo/api/{name}', ApiController::class . '/index');
+    // $r->addRoute('GET', '/mytinytodo/Public/index.php/api', ApiController::class . '/index');
+    $r->addRoute('GET', '/mytinytodo/Public/', ApiController::class . '/index');
+    $r->addRoute('GET', '/mytinytodo/Public/{name}', ApiController::class . '/index');
     $r->addRoute('GET', '/mytinytodo/Hello', HelloController::class . '/index');
 
     // {id} must be a number (\d+)
@@ -134,7 +138,7 @@ $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::NOT_FOUND:
         // ... 404 Not Found
-
+        var_dump($uri);
         echo "404 Not Found!!!";
         break;
     case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:

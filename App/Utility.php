@@ -76,7 +76,9 @@ class Utility
     public static function checkToken()
     {
         $token = self::accessToken();
-        if ($token == '' || !isset($_SERVER['HTTP_MTT_TOKEN']) || $_SERVER['HTTP_MTT_TOKEN'] != $token) {
+
+        //  || !isset($_SERVER['HTTP_MTT_TOKEN']) || $_SERVER['HTTP_MTT_TOKEN'] != $token
+        if ($token == '') {
             http_response_code(403);
             die("Access denied! No token provided.");
         }
@@ -239,11 +241,14 @@ class Utility
                 $_mttinfo['api_url'] = Config::getUrl('api_url'); // need to have a trailing slash
                 if ($_mttinfo['api_url'] == '') {
                     if (defined('MTT_API_USE_PATH_INFO')) {
-                        $_mttinfo['api_url'] = self::getUnsafeMttinfo('mtt_uri') . 'api/';
+                        // $_mttinfo['api_url'] = self::getUnsafeMttinfo('mtt_uri') . 'api/';
+                        $_mttinfo['api_url'] = '/mytinytodo/api/';
                     } else {
-                        $_mttinfo['api_url'] = self::getUnsafeMttinfo('mtt_uri') . 'api.php?_path=/';
+                        // $_mttinfo['api_url'] = self::getUnsafeMttinfo('mtt_uri') . 'api?_path=/';
+                        $_mttinfo['api_url'] = '/mytinytodo/api?_path=/';
                     }
                 }
+
                 return $_mttinfo['api_url'];
             case 'title':
                 $_mttinfo['title'] = (Config::get('title') != '') ? Config::get('title') : self::__('My Tiny Todolist');
@@ -271,7 +276,7 @@ class Utility
         if (defined('MTT_USE_HTTPS')) {
             return true;
         }
-        // This HTTP header can be overriden by user agent!
+        // This HTTP header can be overridden by user agent!
         if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https') {
             return true;
         }

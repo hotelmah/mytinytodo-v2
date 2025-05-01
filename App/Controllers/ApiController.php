@@ -52,6 +52,10 @@ class ApiController
 {
     public static function index()
     {
+        if (Utility::accessToken() == '') {
+            Utility::updateToken();
+        }
+
         $endpoints = array(
             '/lists' => [
                 'GET'  => [ ListsController::class , 'get' ],
@@ -137,7 +141,7 @@ class ApiController
                 if ($isExtMethod) {
                     if (false == ($classDescr[2] ?? false)) { //TODO: describe $classDescr[2]
                         // By default all extension methods require write access rights
-                        checkWriteAccess();
+                        self::checkWriteAccess();
                     }
                 }
 
@@ -155,14 +159,14 @@ class ApiController
                     }
 
 
-                    var_dump($class);
-                    echo "<br><br>";
-                    var_dump($classMethod);
-                    echo "<br><br>";
-                    var_dump($isExtMethod);
-                    echo "<br><br>";
-                    var_dump($param);
-                    die();
+                    // var_dump($class);
+                    // echo "<br><br>";
+                    // var_dump($classMethod);
+                    // echo "<br><br>";
+                    // var_dump($isExtMethod);
+                    // echo "<br><br>";
+                    // var_dump($param);
+                    // die('here');
 
                     $instance = new $class($req, $response);
                     $instance->$classMethod($param);
@@ -188,104 +192,105 @@ class ApiController
         }
         $response->exit();
     }
-}
-/* ===================================================================================================================== */
 
-function myErrorHandler($errno, $errstr, $errfile, $errline)
-{
-    if ($errno == E_ERROR || $errno == E_CORE_ERROR || $errno == E_COMPILE_ERROR || $errno == E_USER_ERROR || $errno == E_PARSE) {
-        $error = 'Error';
-    } elseif ($errno == E_WARNING || $errno == E_CORE_WARNING || $errno == E_COMPILE_WARNING || $errno == E_USER_WARNING || $errno == E_STRICT) {
-        if (error_reporting() & $errno) {
-            $error = 'Warning';
+    /* ===================================================================================================================== */
+
+    public static function myErrorHandler($errno, $errstr, $errfile, $errline)
+    {
+        if ($errno == E_ERROR || $errno == E_CORE_ERROR || $errno == E_COMPILE_ERROR || $errno == E_USER_ERROR || $errno == E_PARSE) {
+            $error = 'Error';
+        } elseif ($errno == E_WARNING || $errno == E_CORE_WARNING || $errno == E_COMPILE_WARNING || $errno == E_USER_WARNING || $errno == E_STRICT) {
+            if (error_reporting() & $errno) {
+                $error = 'Warning';
+            } else {
+                return;
+            }
+        } elseif ($errno == E_NOTICE || $errno == E_USER_NOTICE || $errno == E_DEPRECATED || $errno == E_USER_DEPRECATED) {
+            if (error_reporting() & $errno) {
+                $error = 'Notice';
+            } else {
+                return;
+            }
         } else {
-            return;
+            $error = "Error ($errno)"; // here may be E_RECOVERABLE_ERROR
         }
-    } elseif ($errno == E_NOTICE || $errno == E_USER_NOTICE || $errno == E_DEPRECATED || $errno == E_USER_DEPRECATED) {
-        if (error_reporting() & $errno) {
-            $error = 'Notice';
-        } else {
-            return;
-        }
-    } else {
-        $error = "Error ($errno)"; // here may be E_RECOVERABLE_ERROR
+        throw new Exception("$error: '$errstr' in $errfile:$errline", -1);
     }
-    throw new Exception("$error: '$errstr' in $errfile:$errline", -1);
-}
 
-/* ===================================================================================================================== */
+    /* ===================================================================================================================== */
 
-function myExceptionHandler(Throwable $e)
-{
-    // to avoid Exception thrown without a stack frame
-    try {
-        if (-1 == $e->getCode()) {
-            //thrown in myErrorHandler
+    public static function myExceptionHandler(Throwable $e)
+    {
+        // to avoid Exception thrown without a stack frame
+        try {
+            if (-1 == $e->getCode()) {
+                //thrown in myErrorHandler
+                http_response_code(500);
+                Utility::logAndDie($e->getMessage());
+            }
+
+            $c = get_class($e);
+            $errText = "Exception ($c): '" . $e->getMessage() . "' in " . $e->getFile() . ":" . $e->getLine();
+
+            if (MTT_DEBUG) {
+                if (count($e->getTrace()) > 0) {
+                    $errText .= "\n" . $e->getTraceAsString() ;
+                }
+            }
             http_response_code(500);
-            Utility::logAndDie($e->getMessage());
+            Utility::logAndDie($errText);
+        } catch (Exception $e) {
+            http_response_code(500);
+            Utility::logAndDie('Exception in ExceptionHandler: \'' . $e->getMessage() . '\' in ' . $e->getFile() . ':' . $e->getLine());
+        }
+        exit;
+    }
+
+    /* ===================================================================================================================== */
+
+    public static function checkReadAccess(?int $listId = null)
+    {
+        Utility::checkToken();
+        $db = DBConnection::instance();
+        if (Utility::isLogged()) {
+            return true;
         }
 
-        $c = get_class($e);
-        $errText = "Exception ($c): '" . $e->getMessage() . "' in " . $e->getFile() . ":" . $e->getLine();
-
-        if (MTT_DEBUG) {
-            if (count($e->getTrace()) > 0) {
-                $errText .= "\n" . $e->getTraceAsString() ;
+        if ($listId !== null) {
+            $id = $db->sq("SELECT id FROM {$db->prefix}lists WHERE id=? AND published=1", array($listId));
+            if ($id) {
+                return;
             }
         }
-        http_response_code(500);
-        Utility::logAndDie($errText);
-    } catch (Exception $e) {
-        http_response_code(500);
-        Utility::logAndDie('Exception in ExceptionHandler: \'' . $e->getMessage() . '\' in ' . $e->getFile() . ':' . $e->getLine());
-    }
-    exit;
-}
-
-/* ===================================================================================================================== */
-
-function checkReadAccess(?int $listId = null)
-{
-    Utility::checkToken();
-    $db = DBConnection::instance();
-    if (Utility::isLogged()) {
-        return true;
+        Utility::jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
     }
 
-    if ($listId !== null) {
-        $id = $db->sq("SELECT id FROM {$db->prefix}lists WHERE id=? AND published=1", array($listId));
-        if ($id) {
+    public static function checkWriteAccess(?int $listId = null)
+    {
+        Utility::checkToken();
+        if (self::haveWriteAccess($listId)) {
             return;
         }
-    }
-    Utility::jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
-}
 
-function checkWriteAccess(?int $listId = null)
-{
-    Utility::checkToken();
-    if (haveWriteAccess($listId)) {
-        return;
+        http_response_code(403);
+
+        Utility::jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
     }
 
-    http_response_code(403);
-
-    Utility::jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
-}
-
-function haveWriteAccess(?int $listId = null): bool
-{
-    if (Utility::isReadonly()) {
-        return false;
-    }
-    // check list exist
-    if ($listId !== null && $listId != -1) {
-        $db = DBConnection::instance();
-        $count = $db->sq("SELECT COUNT(*) FROM {$db->prefix}lists WHERE id=?", array($listId));
-
-        if (!$count) {
+    public static function haveWriteAccess(?int $listId = null): bool
+    {
+        if (Utility::isReadonly()) {
             return false;
         }
+        // check list exist
+        if ($listId !== null && $listId != -1) {
+            $db = DBConnection::instance();
+            $count = $db->sq("SELECT COUNT(*) FROM {$db->prefix}lists WHERE id=?", array($listId));
+
+            if (!$count) {
+                return false;
+            }
+        }
+        return true;
     }
-    return true;
 }

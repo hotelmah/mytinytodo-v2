@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace App\API;
 
+use App\Controllers\ApiController;
 use App\Utility;
 use App\Utility2;
 use App\Config\Config;
@@ -29,10 +30,11 @@ class ListsController extends ApiRequestResponse
     public function get()
     {
         $db = DBConnection::instance();
+
         Utility::checkToken();
         $t = array();
         $t['total'] = 0;
-        $haveWriteAccess = haveWriteAccess();
+        $haveWriteAccess = ApiController::haveWriteAccess();
         if (!$haveWriteAccess) {
             $sqlWhere = 'WHERE published=1';
         } else {
@@ -59,7 +61,7 @@ class ListsController extends ApiRequestResponse
      */
     public function post()
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $action = $this->req->jsonBody['action'] ?? '';
         switch ($action) {
             case 'order':
@@ -79,7 +81,7 @@ class ListsController extends ApiRequestResponse
      */
     public function put()
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $action = $this->req->jsonBody['action'] ?? '';
         switch ($action) {
             case 'order':
@@ -101,14 +103,14 @@ class ListsController extends ApiRequestResponse
      */
     public function getId($id)
     {
-        checkReadAccess($id);
+        ApiController::checkReadAccess($id);
         $db = DBConnection::instance();
         $r = $db->sqa("SELECT * FROM {$db->prefix}lists WHERE id=?", array($id));
         if (!$r) {
             $this->response->data = null;
             return;
         }
-        $t = $this->prepareList($r, haveWriteAccess());
+        $t = $this->prepareList($r, ApiController::haveWriteAccess());
         $this->response->data = $t;
     }
 
@@ -120,7 +122,7 @@ class ListsController extends ApiRequestResponse
      */
     public function deleteId($id)
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $this->response->data = $this->deleteList($id);
     }
 
@@ -134,7 +136,7 @@ class ListsController extends ApiRequestResponse
      */
     public function putId($id)
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $id = (int)$id;
 
         $action = $this->req->jsonBody['action'] ?? '';

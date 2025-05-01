@@ -158,7 +158,8 @@ var mytinytodo = window.mytinytodo = _mtt = {
             delete options.apiUrl;
         }
         else {
-            this.apiUrl = this.mttUrl + 'api.php?_path=/';
+            // this.apiUrl = this.mttUrl + '/api?_path=/';
+            this.apiUrl = 'index.php/api?_path=/';
         }
         if (options.hasOwnProperty('db')) {
             delete options.db;

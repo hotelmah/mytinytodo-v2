@@ -14,7 +14,8 @@ function js_options()
     // Here we can use URIs instead of full URLs.
     $homeUrl = htmlspecialchars(Config::getUrl('url'));
     if ($homeUrl == '') {
-        $homeUrl = Utility::getMttinfo('mtt_uri');
+        // $homeUrl = Utility::getMttinfo('mtt_uri');
+        $homeUrl = '';
     }
     $a = array(
         "token" => htmlspecialchars(Utility::accessToken()),

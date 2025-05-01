@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\API;
 
+use App\Controllers\ApiController;
 use App\Core\MTTExtension;
 use App\Core\MTTExtensionSettingsInterface;
 use App\Core\MTTExtensionLoader;
@@ -18,7 +19,7 @@ class ExtSettingsController extends ApiRequestResponse
      */
     public function get(string $ext)
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
 
         /** @var MTTExtension|MTTExtensionSettingsInterface $instance */
         $instance = $this->extInstance($ext);
@@ -81,7 +82,7 @@ class ExtSettingsController extends ApiRequestResponse
      */
     public function put(string $ext)
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
 
         /** @var MTTExtension|MTTExtensionSettingsInterface $instance */
         $instance = $this->extInstance($ext);

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace App\API;
 
+use App\Controllers\ApiController;
 use App\Utility;
 use App\Utility2;
 use App\Database\DBConnection;
@@ -34,7 +35,7 @@ class TasksController extends ApiRequestResponse
     public function get()
     {
         $listId = (int)Utility2::get('list');
-        checkReadAccess($listId);
+        ApiController::checkReadAccess($listId);
         $db = DBConnection::instance();
         $dbcore = DBCore::default();
 
@@ -154,10 +155,10 @@ class TasksController extends ApiRequestResponse
             }
             $t['list'][] = $this->prepareTaskRow($r);
         }
-        if (Utility2::get('setCompl') && haveWriteAccess($listId)) {
+        if (Utility2::get('setCompl') && ApiController::haveWriteAccess($listId)) {
             ListsController::setListShowCompletedById($listId, !(Utility2::get('compl') == 0));
         }
-        if (Utility2::get('saveSort') == 1 && haveWriteAccess($listId)) {
+        if (Utility2::get('saveSort') == 1 && ApiController::haveWriteAccess($listId)) {
             ListsController::setListSortingById($listId, $sort);
         }
         $this->response->data = $t;
@@ -173,11 +174,11 @@ class TasksController extends ApiRequestResponse
     {
         $action = $this->req->jsonBody['action'] ?? '';
         if ($action == 'order') { //compatibility
-            checkWriteAccess();
+            ApiController::checkWriteAccess();
             $this->response->data = $this->changeTaskOrder();
         } else {
             $listId = (int)($this->req->jsonBody['list'] ?? 0);
-            checkWriteAccess($listId);
+            ApiController::checkWriteAccess($listId);
             if ($action == 'newFull') {
                 $this->response->data = $this->fullNewTaskInList($listId);
             } else {
@@ -193,7 +194,7 @@ class TasksController extends ApiRequestResponse
      */
     public function put()
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $action = $this->req->jsonBody['action'] ?? '';
         switch ($action) {
             case 'order':
@@ -214,7 +215,7 @@ class TasksController extends ApiRequestResponse
      */
     public function deleteId($id)
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $this->response->data = $this->deleteTask((int)$id);
     }
 
@@ -226,7 +227,7 @@ class TasksController extends ApiRequestResponse
      */
     public function putId($id)
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $id = (int)$id;
 
         if (!DBCore::default()->taskExists($id)) {
@@ -267,7 +268,7 @@ class TasksController extends ApiRequestResponse
      */
     public function postTitleParse()
     {
-        checkWriteAccess();
+        ApiController::checkWriteAccess();
         $t = array(
             'title' => trim($this->req->jsonBody['title'] ?? ''),
             'prio' => 0,
@@ -289,14 +290,14 @@ class TasksController extends ApiRequestResponse
 
     public function postNewCounter()
     {
-        checkReadAccess();
+        ApiController::checkReadAccess();
         $lists = $this->req->jsonBody['lists'] ?? [];
         if (!is_array($lists)) {
             $lists = [];
         }
 
         $userLists = []; // [string]
-        if (!haveWriteAccess()) {
+        if (!ApiController::haveWriteAccess()) {
             $userLists = $this->getUserListsSimple(true);
             if ($userLists) {
                 $sqlWhereList = "AND list_id IN (" . implode(',', $userLists) . ")";
@@ -593,7 +594,7 @@ class TasksController extends ApiRequestResponse
             $ad = array();
             foreach ($order as $obj) {
                 $id = $obj['id'] ?? 0;
-                $diff = $obj['diff'] ?? 0;
+                $diff = $obj4['diff'] ?? 0;
                 $ad[(int)$diff][] = (int)$id;
             }
             $db->ex("BEGIN");

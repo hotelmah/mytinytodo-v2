@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace App\API;
 
+use App\Controllers\ApiController;
 use App\Database\DBConnection;
 use App\Utility2;
 
@@ -23,7 +24,7 @@ class TagsController extends ApiRequestResponse
     public function getCloud($listId)
     {
         $listId = (int)$listId;
-        checkReadAccess($listId);
+        ApiController::checkReadAccess($listId);
         $db = DBConnection::instance();
 
         $sqlWhere = ($listId == -1) ? "" : "WHERE list_id = $listId";
@@ -79,7 +80,7 @@ class TagsController extends ApiRequestResponse
     public function getSuggestions($listId)
     {
         $listId = (int)Utility2::get('list');
-        checkWriteAccess($listId);
+        ApiController::checkWriteAccess($listId);
         $db = DBConnection::instance();
         $begin = trim(Utility2::get('q'));
         $limit = 8;
