@@ -20,6 +20,10 @@ use App\Controllers\HelloController;
 use App\Controllers\HomeController;
 use App\Controllers\ApiController;
 
+use Monolog\Level;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
 /* ===================================================================================================================== */
 
 if (getenv('MTT_ENABLE_DEBUG') == 'YES' || (defined('MTT_DEBUG') && MTT_DEBUG)) {
@@ -36,6 +40,11 @@ if (getenv('MTT_ENABLE_DEBUG') == 'YES' || (defined('MTT_DEBUG') && MTT_DEBUG)) 
         define('MTT_DEBUG', false);
     }
 }
+
+
+/* ===================================================================================================================== */
+
+define('MTT_API_USE_PATH_INFO', true);
 
 /* ===================================================================================================================== */
 
@@ -107,13 +116,29 @@ $_mttinfo = array();
 
 /* ===================================================================================================================== */
 
+// create a log channel
+$log = new Logger('Index');
+$log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
+
+$log->pushProcessor(function ($record) {
+    $record->extra['REQ_URI'] = $_SERVER['REQUEST_URI'];
+
+    return $record;
+});
+
+// $log->warning('Foo');
+// $log->error('Bar');
+
+/* ===================================================================================================================== */
+
 $dispatcher = simpleDispatcher(function (FastRoute\ConfigureRoutes $r) {
     $r->addRoute('GET', '/mytinytodo/', HomeController::class . '/index');
-    $r->addRoute('GET', '/mytinytodo/api', ApiController::class . '/index');
+    $r->addRoute('GET', '/mytinytodo/api/{name:.+}', ApiController::class . '/index');
     $r->addRoute('GET', '/mytinytodo/api/{name}', ApiController::class . '/index');
+    $r->addRoute('POST', '/mytinytodo/api/{name:.+}', ApiController::class . '/index');
     // $r->addRoute('GET', '/mytinytodo/Public/index.php/api', ApiController::class . '/index');
-    $r->addRoute('GET', '/mytinytodo/Public/', ApiController::class . '/index');
-    $r->addRoute('GET', '/mytinytodo/Public/{name}', ApiController::class . '/index');
+    // $r->addRoute('GET', '/mytinytodo/Public/', ApiController::class . '/index');
+    // $r->addRoute('GET', '/mytinytodo/Public/{name}', ApiController::class . '/index');
     $r->addRoute('GET', '/mytinytodo/Hello', HelloController::class . '/index');
 
     // {id} must be a number (\d+)
@@ -138,21 +163,30 @@ $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::NOT_FOUND:
         // ... 404 Not Found
-        var_dump($uri);
         echo "404 Not Found!!!";
+        $log->error('Dispatcher:404 Not Found', array_merge(['HTTPMethod' => $httpMethod], ['URI' => $uri], ['RouteInfo0' => $routeInfo[0]], ['RouteInfo1' => $routeInfo[1]]));
         break;
+
     case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
         $allowedMethods = $routeInfo[1];
         // ... 405 Method Not Allowed
-
         echo "405 Method Not Allowed";
+        $log->error('Dispatcher:405 Not Allowed', array_merge(['HTTPMethod' => $httpMethod], ['URI' => $uri], ['RouteInfo0' => $routeInfo[0]], ['RouteInfo1' => $routeInfo[1]]));
         break;
+
     case FastRoute\Dispatcher::FOUND:
         $handler = $routeInfo[1];
+
         $vars = $routeInfo[2];
+
+        if (strpos($handler, 'ApiController') > 0) {
+            $vars['name'] = '/' . (isset($vars['name']) ? $vars['name'] : '');
+        }
         // ... call $handler with $vars
 
         list($class, $method) = explode("/", $handler, 2);
+
+        $log->notice('Dispatcher:Found', array_merge(['HTTPMethod' => $httpMethod], ['URI' => $uri], ['Class' => $class], ['Method' => $method], ['Vars' => $vars], ['RouteInfo0' => $routeInfo[0]], ['RouteInfo1' => $routeInfo[1]], ['RouteInfo2' => $routeInfo[2]]));
         call_user_func_array(array(new $class(), $method), $vars);
         break;
 }

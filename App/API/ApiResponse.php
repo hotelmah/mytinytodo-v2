@@ -41,7 +41,10 @@ class ApiResponse
         }
         if ($this->contentType != 'application/json') {
             header('Content-type: ' . $this->contentType);
-            print $this->data;
+
+            if (!is_null($this->data)) {
+                print $this->data;
+            }
             exit();
         }
         Utility::jsonExit($this->data);

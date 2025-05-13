@@ -17,6 +17,9 @@ use App\Database\DBConnection;
 use App\Utility;
 use Exception;
 use Throwable;
+use Monolog\Level;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 // if (!defined('MTTPATH')) {
 //     define('MTTPATH', dirname(__FILE__) . '/');
@@ -50,7 +53,21 @@ use Throwable;
 
 class ApiController
 {
-    public static function index()
+    private Logger $log;
+
+    public function __construct()
+    {
+        $this->log = new Logger('ApiController');
+        $this->log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
+
+        $this->log->pushProcessor(function ($record) {
+            $record->extra['REQ_URI'] = $_SERVER['REQUEST_URI'];
+
+            return $record;
+        });
+    }
+
+    public function index(string $name)
     {
         if (Utility::accessToken() == '') {
             Utility::updateToken();
@@ -102,8 +119,11 @@ class ApiController
 
         // look for extensions
         foreach (MTTExtensionLoader::loadedExtensions() as $instance) {
+            $this->log->info('inside foreach MTTExtensionLoader::loadedExtensions() as $instance');
             if ($instance instanceof MTTHttpApiExtender) {
+                $this->log->info('$instance instanceof MTTHttpApiExtender is TRUE');
                 $newRoutes = $instance->extendHttpApi();
+                $this->log->notice('instance->extendHttpApi', ['newRoutes' => $newRoutes]);
                 foreach ($newRoutes as $endpoint => $methods) {
                     $endpoint = '/ext/' . $instance::BUNDLEID . $endpoint;
                     foreach ($methods as $k => &$v) {
@@ -114,7 +134,8 @@ class ApiController
             }
         }
 
-        $req = new ApiRequest();
+        $req = new ApiRequest($name);
+        $this->log->info('Request Created', ['name' => $name]);
         $response = new ApiResponse();
         $executed = false;
         $data = null;
@@ -122,13 +143,17 @@ class ApiController
         foreach ($endpoints as $search => $methods) {
             $m = array();
             if (preg_match("#^$search$#", $req->path, $m)) {
+                $this->log->notice('preg_match found', array_merge(['search' => $search], ['Req Path' => $req->path], ['m' => $m]));
                 $classDescr = $methods[$req->method] ?? null;
+                $this->log->info('methods[req->method] assigned to classDescr', ['ClassDescr' => $classDescr]);
                 // check if http method is supported for path
                 if (is_null($classDescr)) {
+                    $this->log->warning('ClassDescr is NULL, Response exit');
                     $response->htmlContent("Unknown method for resource", 500)
                         ->exit();
                 }
                 if (!is_array($classDescr) || count($classDescr) < 2) {
+                    $this->log->warning('ClassDescr is not an array or count < 2', ['classDescr' => $classDescr]);
                     $response->htmlContent("Incorrect method definition", 500)
                         ->exit();
                 }
@@ -136,10 +161,11 @@ class ApiController
                 $class = $classDescr[0];
                 $classMethod = $classDescr[1];
                 $isExtMethod = $classDescr[3] ?? false;
-
+                $this->log->info('Assigned Class, ClassMethod, and isExtMethod', array_merge(['class' => $class], ['ClassMethod' => $classMethod], ['isExtMethod' => $isExtMethod]));
 
                 if ($isExtMethod) {
                     if (false == ($classDescr[2] ?? false)) { //TODO: describe $classDescr[2]
+                        $this->log->notice('CheckWriteAccess since isExtMEthod TRUE');
                         // By default all extension methods require write access rights
                         self::checkWriteAccess();
                     }
@@ -148,48 +174,50 @@ class ApiController
                 $param = null;
                 if (count($m) >= 2) {
                     $param = $m[1];
+                    $this->log->info('Param assigned since count m >= 2', ['param' => $param]);
                 }
 
                 if (method_exists($class, $classMethod)) { // test for static with ReflectionMethod?
+                    $this->log->info('method exists', array_merge(['class' => $class], ['classMethod' => $classMethod]));
                     if ($req->method != 'GET' && $req->contentType == 'application/json') {
+                        $this->log->info('method exists: != GET and JSON', array_merge(['Req Method' => $req->method], ['Req ContentType' => $req->contentType]));
                         if ($req->decodeJsonBody() === false) {
+                            $this->log->error('Req decode JSON body is false');
                             $response->htmlContent("Failed to parse JSON body", 500)
                                 ->exit();
                         }
                     }
 
+                    // $instance = new $class($req, $response);
+                    // $instance->$classMethod($param);
 
-                    // var_dump($class);
-                    // echo "<br><br>";
-                    // var_dump($classMethod);
-                    // echo "<br><br>";
-                    // var_dump($isExtMethod);
-                    // echo "<br><br>";
-                    // var_dump($param);
-                    // die('here');
+                    $tempObj = new $class($req, $response);
+                    call_user_func([$tempObj, $classMethod]);
 
-                    $instance = new $class($req, $response);
-                    $instance->$classMethod($param);
                     $executed = true;
+
+                    $this->log->info('just called call user func. Break is next');
                     break;
                 } else {
                     if (MTT_DEBUG) {
-                        $response->htmlContent("Class method $class:$classMethod() not found", 405)
-                            ->exit();
+                        $this->log->error('Class Method not Found MTT DEBUG TRUE', array_merge(['class' => $class], ['classMethod' => $classMethod]));
+                        $response->htmlContent("Class method $class:$classMethod() not found", 405)->exit();
                     }
-                    $response->htmlContent("Class method not found", 405)
-                        ->exit();
+                    $this->log->error('Class Method not Found MTT DEBUG FALSE', array_merge(['class' => $class], ['classMethod' => $classMethod]));
+                    $response->htmlContent("Class method not found", 405)->exit();
                 }
             }
         }
 
         if (!$executed) {
             if (MTT_DEBUG) {
-                $response->htmlContent("Unknown endpoint: {$req->method} {$req->path}", 404)
-                    ->exit();
+                $this->log->error('Unknown Endpoint MTT DEBUG TRUE', array_merge(['class' => $class], ['classMethod' => $classMethod], ['Req Method' => $req->method], ['Req Path' => $req->path]));
+                $response->htmlContent("Unknown endpoint: {$req->method} {$req->path}", 404)->exit();
             }
-            $response->htmlContent("Unknown endpoint", 404);
+            $this->log->error('Unknown Endpoint MTT DEBUG FALSE', array_merge(['class' => $class], ['classMethod' => $classMethod], ['Req Method' => $req->method], ['Req Path' => $req->path]));
+            $response->htmlContent("Unknown endpoint", 404)->exit();
         }
+        $this->log->info('Response exit called. Looks like executed');
         $response->exit();
     }
 

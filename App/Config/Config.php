@@ -188,7 +188,8 @@ class Config
         $url = '';
 
         if (isset(self::$config[$key])) {
-            $url = self::$config[$key];
+            // $url = self::$config[$key];
+            $url = '/mytinytodo/api';
         } elseif (isset(self::$params[$key])) {
             $url = self::$params[$key]['default'];
         } else {

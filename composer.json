@@ -13,7 +13,8 @@
         "symfony/polyfill-intl-normalizer": "1.28",
         "erusev/parsedown": "1.7.4",
         "nikic/fast-route": "2.0.0-beta1",
-        "aplus/http": "^4.5"
+        "aplus/http": "^4.5",
+        "monolog/monolog": "^3.9"
     },
     "authors": [
         {

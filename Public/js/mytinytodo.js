@@ -2925,7 +2925,7 @@ function saveSettings(frm)
         if(json.saved) {
             flashInfo(_mtt.lang.get('settingsSaved'));
             setTimeout( function(){
-                window.location.assign(_mtt.homeUrl); //window.location.reload();
+                // window.location.assign(_mtt.homeUrl); //window.location.reload();
             }, 1000);
         }
     }, 'json');

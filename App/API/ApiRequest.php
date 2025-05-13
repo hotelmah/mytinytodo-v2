@@ -11,10 +11,12 @@ class ApiRequest
     public $contentType;
     public $jsonBody;
 
-    public function __construct()
+    public function __construct(string $name)
     {
         if (defined('MTT_API_USE_PATH_INFO')) {
-            $this->path = $_SERVER['PATH_INFO'];
+            // $this->path = $_SERVER['REQUEST_URI'];
+            $this->path = $name;
+            // die($this->path);
         } else {
             $this->path = $_GET['_path'] ?? '';
         }

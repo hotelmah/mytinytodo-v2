@@ -19,9 +19,26 @@ use App\Database\DBCore;
 use App\Core\MTTNotification;
 use App\Core\MTTNotificationCenter;
 use Exception;
+use Monolog\Level;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 class ListsController extends ApiRequestResponse
 {
+    // private Logger $log;
+
+    // public function __construct()
+    // {
+    //     $this->log = new Logger('ListsController');
+    //     $this->log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
+
+    //     $this->log->pushProcessor(function ($record) {
+    //         $record->extra['REQ_URI'] = $_SERVER['REQUEST_URI'];
+
+    //         return $record;
+    //     });
+    // }
+
     /**
      * Get all lists
      * @return void
@@ -30,11 +47,13 @@ class ListsController extends ApiRequestResponse
     public function get()
     {
         $db = DBConnection::instance();
+        // $this->log->notice('Inside ListsController GET');
 
         Utility::checkToken();
         $t = array();
         $t['total'] = 0;
         $haveWriteAccess = ApiController::haveWriteAccess();
+        // $this->log->info('haveWriteAccess Set', ['haveWriteAccess' => $haveWriteAccess]);
         if (!$haveWriteAccess) {
             $sqlWhere = 'WHERE published=1';
         } else {
@@ -50,6 +69,7 @@ class ListsController extends ApiRequestResponse
         }
 
         $this->response->data = $t;
+        // $this->log->notice('Setting Response Data with t', ['t' => $t]);
     }
 
 
