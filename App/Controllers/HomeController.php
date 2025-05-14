@@ -2,20 +2,17 @@
 
 namespace App\Controllers;
 
-use Framework\HTTP\Request;
-use Framework\HTTP\Response;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Nyholm\Psr7\Factory\Psr17Factory;
 
 class HomeController extends BaseController
 {
-    public function index()
+    public function index(ServerRequestInterface $request): ResponseInterface
     {
-        $request = new Request();
-        $response = new Response($request);
+        $psr17Factory = new Psr17Factory();
 
-        $response->setStatus(200);
-        $response->setHeader('Content-Type', 'text/html');
-
-        $response->setBody(self::getView('default', []));
-        $response->send();
+        $responseBody = $psr17Factory->createStream(self::getView('default', []));
+        return $psr17Factory->createResponse(200)->withBody($responseBody);
     }
 }

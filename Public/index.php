@@ -15,7 +15,18 @@ use App\Config\Config;
 use App\Utility;
 use App\Lang\Lang;
 use App\Core\MTTNotificationCenter;
-use function FastRoute\simpleDispatcher;
+
+use League\Route\Router;
+use League\Route\Strategy\ApplicationStrategy;
+
+use League\Route\Http\Exception\NotFoundException;
+use League\Route\Http\Exception\ForbiddenException;
+
+use Symfony\Component\HttpFoundation\Request;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
+use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
+
 use App\Controllers\HelloController;
 use App\Controllers\HomeController;
 use App\Controllers\ApiController;
@@ -23,6 +34,8 @@ use App\Controllers\ApiController;
 use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+
+use League\Container\Container;
 
 /* ===================================================================================================================== */
 
@@ -121,75 +134,81 @@ $log = new Logger('Index');
 $log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
 
 $log->pushProcessor(function ($record) {
+    $record->extra['REQ_METHOD'] = $_SERVER['REQUEST_METHOD'];
     $record->extra['REQ_URI'] = $_SERVER['REQUEST_URI'];
 
     return $record;
 });
 
-// $log->warning('Foo');
-// $log->error('Bar');
+/* ===================================================================================================================== */
+
+$container = new Container();
 
 /* ===================================================================================================================== */
 
-$dispatcher = simpleDispatcher(function (FastRoute\ConfigureRoutes $r) {
-    $r->addRoute('GET', '/mytinytodo/', HomeController::class . '/index');
-    $r->addRoute('GET', '/mytinytodo/api/{name:.+}', ApiController::class . '/index');
-    $r->addRoute('GET', '/mytinytodo/api/{name}', ApiController::class . '/index');
-    $r->addRoute('POST', '/mytinytodo/api/{name:.+}', ApiController::class . '/index');
-    // $r->addRoute('GET', '/mytinytodo/Public/index.php/api', ApiController::class . '/index');
-    // $r->addRoute('GET', '/mytinytodo/Public/', ApiController::class . '/index');
-    // $r->addRoute('GET', '/mytinytodo/Public/{name}', ApiController::class . '/index');
-    $r->addRoute('GET', '/mytinytodo/Hello', HelloController::class . '/index');
+$container->add(ApiController::class)->addArgument($log);
+// $container->add(Basic::class)->addArgument('Gee');
+// $container->add(Logger::class)->addArgument('hello');
 
-    // {id} must be a number (\d+)
-    // $r->addRoute('GET', '/user/{id:\d+}', 'get_user_handler');
-    // The /{title} suffix is optional
-    // $r->addRoute('GET', '/articles/{id:\d+}[/{title}]', 'get_article_handler');
-});
+/* ===================================================================================================================== */
 
-// Fetch method and URI from somewhere
-$httpMethod = $_SERVER['REQUEST_METHOD'];
-$uri = $_SERVER['REQUEST_URI'];
+$symfonyRequest = Request::createFromGlobals();
 
-// Strip query string (?foo=bar) and decode URI
-if (false !== $pos = strpos($uri, '?')) {
-    $uri = substr($uri, 0, $pos);
+$psr17Factory = new Psr17Factory();
+$psrHttpFactory = new PsrHttpFactory($psr17Factory, $psr17Factory, $psr17Factory, $psr17Factory);
+$psrRequest = $psrHttpFactory->createRequest($symfonyRequest);
+$log->info('Request Created');
+
+/* ===================================================================================================================== */
+
+$strategy = new ApplicationStrategy();
+$strategy->setContainer($container);
+
+$router = new Router();
+$log->info('Created Router');
+$router->setStrategy($strategy);
+$log->info('Added Strategy to Router for Dependency Injection');
+
+
+// map a route
+$router->map('GET', '/mytinytodo/', [HomeController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/lists', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/tasks/newCounter', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/tagCloud/{id}', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
+
+try {
+    $psrResponse = $router->dispatch($psrRequest);
+    $log->notice('Router Dispatch: Found');
+} catch (NotFoundException $e) {
+    echo '<h1>' . $e->getStatusCode() . '</h1>';
+    echo '<h2>' . $e->getMessage() . '</h2>';
+    echo '<pre>';
+    print_r($e->getHeaders());
+    echo '</pre>';
+    $log->error('404 Not Found Exception Occurred', $e->getHeaders());
+    exit();
+} catch (ForbiddenException $e) {
+    echo '<h1>' . $e->getStatusCode() . '</h1>';
+    echo '<h2>' . $e->getMessage() . '</h2>';
+    echo '<pre>';
+    print_r($e->getHeaders());
+    echo '</pre>';
+    $log->error('Forbidden Exception Occurred', $e->getHeaders());
+    exit();
 }
 
-$uri = rawurldecode($uri);
+$log->info('Route Dispatch Completed');
 
-$routeInfo = $dispatcher->dispatch($httpMethod, $uri);
+/* ===================================================================================================================== */
 
-switch ($routeInfo[0]) {
-    case FastRoute\Dispatcher::NOT_FOUND:
-        // ... 404 Not Found
-        echo "404 Not Found!!!";
-        $log->error('Dispatcher:404 Not Found', array_merge(['HTTPMethod' => $httpMethod], ['URI' => $uri], ['RouteInfo0' => $routeInfo[0]], ['RouteInfo1' => $routeInfo[1]]));
-        break;
+$httpFoundationFactory = new HttpFoundationFactory();
+$symfonyResponse = $httpFoundationFactory->createResponse($psrResponse);
 
-    case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
-        $allowedMethods = $routeInfo[1];
-        // ... 405 Method Not Allowed
-        echo "405 Method Not Allowed";
-        $log->error('Dispatcher:405 Not Allowed', array_merge(['HTTPMethod' => $httpMethod], ['URI' => $uri], ['RouteInfo0' => $routeInfo[0]], ['RouteInfo1' => $routeInfo[1]]));
-        break;
-
-    case FastRoute\Dispatcher::FOUND:
-        $handler = $routeInfo[1];
-
-        $vars = $routeInfo[2];
-
-        if (strpos($handler, 'ApiController') > 0) {
-            $vars['name'] = '/' . (isset($vars['name']) ? $vars['name'] : '');
-        }
-        // ... call $handler with $vars
-
-        list($class, $method) = explode("/", $handler, 2);
-
-        $log->notice('Dispatcher:Found', array_merge(['HTTPMethod' => $httpMethod], ['URI' => $uri], ['Class' => $class], ['Method' => $method], ['Vars' => $vars], ['RouteInfo0' => $routeInfo[0]], ['RouteInfo1' => $routeInfo[1]], ['RouteInfo2' => $routeInfo[2]]));
-        call_user_func_array(array(new $class(), $method), $vars);
-        break;
-}
+$symfonyResponse->headers->add(['Content-Type' => 'text/html']);
+$symfonyResponse->send();
+$log->notice('Symfony Response Sent. END');
 
 /* ===================================================================================================================== */
 

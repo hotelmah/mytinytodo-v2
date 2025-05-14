@@ -15,11 +15,14 @@ use App\API\ApiRequest;
 use App\API\ApiResponse;
 use App\Database\DBConnection;
 use App\Utility;
-use Exception;
-use Throwable;
 use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use Exception;
+use Throwable;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Nyholm\Psr7\Factory\Psr17Factory;
 
 // if (!defined('MTTPATH')) {
 //     define('MTTPATH', dirname(__FILE__) . '/');
@@ -55,26 +58,23 @@ class ApiController
 {
     private Logger $log;
 
-    public function __construct()
+    public function __construct(Logger $logger)
     {
-        $this->log = new Logger('ApiController');
-        $this->log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
-
-        $this->log->pushProcessor(function ($record) {
-            $record->extra['REQ_URI'] = $_SERVER['REQUEST_URI'];
-
-            return $record;
-        });
+        $this->log = $logger->withName('ApiController');
     }
 
-    public function index(string $name)
+
+    public function index(ServerRequestInterface $request, array $args): ResponseInterface
     {
         if (Utility::accessToken() == '') {
             Utility::updateToken();
         }
 
+        $this->log->info('Args Dump', [$args]);
+        $this->log->info('Request Query String', [$request->getQueryParams()]);
+
         $endpoints = array(
-            '/lists' => [
+            '/mytinytodo/api/lists' => [
                 'GET'  => [ ListsController::class , 'get' ],
                 'POST' => [ ListsController::class , 'post' ],
                 'PUT'  => [ ListsController::class , 'put' ],
@@ -85,7 +85,7 @@ class ApiController
                 'DELETE'  => [ ListsController::class , 'deleteId' ],
                 'POST'    => [ ListsController::class , 'putId' ], //compatibility
             ],
-            '/tasks' => [
+            '/mytinytodo/api/tasks' => [
                 'GET'  => [ TasksController::class , 'get' ],
                 'POST' => [ TasksController::class , 'post' ],
                 'PUT'  => [ TasksController::class , 'put' ],
@@ -98,10 +98,10 @@ class ApiController
             '/tasks/parseTitle' => [
                 'POST' => [ TasksController::class , 'postTitleParse' ],
             ],
-            '/tasks/newCounter' => [
+            '/mytinytodo/api/tasks/newCounter' => [
                 'POST' => [ TasksController::class , 'postNewCounter' ],
             ],
-            '/tagCloud/(-?\d+)' => [
+            '/mytinytodo/api/tagCloud/(-?\d+)' => [
                 'GET'  => [ TagsController::class , 'getCloud' ],
             ],
             '/suggestTags' => [
@@ -134,11 +134,19 @@ class ApiController
             }
         }
 
-        $req = new ApiRequest($name);
-        $this->log->info('Request Created', ['name' => $name]);
+
+        $req = new ApiRequest((count($request->getQueryParams()) > 0) ? '/mytinytodo/api/tasks?' . http_build_query($request->getQueryParams()) : $request->getUri()->getPath() . (($args[0] != "") ? '/' . $args[0] : ""));
+        $this->log->info('Request Created');
         $response = new ApiResponse();
         $executed = false;
         $data = null;
+
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        /* ===================================================================================================================== */
+
 
         foreach ($endpoints as $search => $methods) {
             $m = array();
@@ -176,6 +184,11 @@ class ApiController
                     $param = $m[1];
                     $this->log->info('Param assigned since count m >= 2', ['param' => $param]);
                 }
+
+                // if (is_null($class) && is_null($classMethod) && (count($request->getQueryParams()) > 0)) {
+                //     $class = TasksController::class;
+                //     $classMethod = 'get';
+                // }
 
                 if (method_exists($class, $classMethod)) { // test for static with ReflectionMethod?
                     $this->log->info('method exists', array_merge(['class' => $class], ['classMethod' => $classMethod]));
@@ -218,7 +231,10 @@ class ApiController
             $response->htmlContent("Unknown endpoint", 404)->exit();
         }
         $this->log->info('Response exit called. Looks like executed');
-        $response->exit();
+        // $response->exit();
+
+        $responseBody = $psr17Factory->createStream(json_encode($response->data));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
     /* ===================================================================================================================== */
