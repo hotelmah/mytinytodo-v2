@@ -71,7 +71,7 @@ class ApiController
         }
 
         $this->log->info('Args Dump', [$args]);
-        $this->log->info('Request Query String', [$request->getQueryParams()]);
+        $this->log->info('League Request Query String', [$request->getQueryParams()]);
 
         $endpoints = array(
             '/mytinytodo/api/lists' => [
@@ -134,9 +134,10 @@ class ApiController
             }
         }
 
-
-        $req = new ApiRequest((count($request->getQueryParams()) > 0) ? '/mytinytodo/api/tasks?' . http_build_query($request->getQueryParams()) : $request->getUri()->getPath() . (($args[0] != "") ? '/' . $args[0] : ""));
-        $this->log->info('Request Created');
+        $tempString = (count($request->getQueryParams()) > 0) ? '/mytinytodo/api/tasks&list=1&' . http_build_query($request->getQueryParams()) : $request->getUri()->getPath() . ((isset($args[0])) ? '/' . $args[0] : "");
+        $req = new ApiRequest($tempString);
+        $this->log->info('Argument sent to MTT Request', ['path' => $tempString]);
+        $this->log->info('MTT Request Created');
         $response = new ApiResponse();
         $executed = false;
         $data = null;
