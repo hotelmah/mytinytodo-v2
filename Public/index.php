@@ -36,6 +36,8 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
 use League\Container\Container;
+use League\Route\Http\Exception\MethodNotAllowedException as ExceptionMethodNotAllowedException;
+use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 
 /* ===================================================================================================================== */
 
@@ -175,7 +177,7 @@ $router->map('GET', '/mytinytodo/', [HomeController::class, 'index']);
 $router->map('GET', '/mytinytodo/api/lists', [ApiController::class, 'index']);
 $router->map('GET', '/mytinytodo/api', [ApiController::class, 'index']);
 $router->map('POST', '/mytinytodo/api/tasks/newCounter', [ApiController::class, 'index']);
-$router->map('POST', '/mytinytodo/api/tagCloud/{id}', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/tagCloud/{id}', [ApiController::class, 'index']);
 $router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
 
 try {
@@ -196,6 +198,16 @@ try {
     print_r($e->getHeaders());
     echo '</pre>';
     $log->error('Forbidden Exception Occurred', $e->getHeaders());
+    exit();
+} catch (ExceptionMethodNotAllowedException $e) {
+    echo '<h1>' . $e->getStatusCode() . '</h1>';
+    echo '<h2>' . $e->getMessage() . '</h2>';
+    $log->error('Get Status Code', ['GetStatusCode' => $e->getStatusCode()]);
+    $log->error('Get Message', ['GetMessage' => $e->getMessage()]);
+    echo '<pre>';
+    print_r($e->getHeaders());
+    echo '</pre>';
+    $log->error('Method Not Allowed Exception Occurred', $e->getHeaders());
     exit();
 }
 

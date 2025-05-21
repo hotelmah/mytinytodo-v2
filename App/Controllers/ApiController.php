@@ -102,7 +102,7 @@ class ApiController
                 'POST' => [ TasksController::class , 'postNewCounter' ],
             ],
             '/mytinytodo/api/tagCloud/(-?\d+)' => [
-                'GET'  => [ TagsController::class , 'getCloud' ],
+                'GET'  => [TagsController::class, 'getCloud', $args],
             ],
             '/suggestTags' => [
                 'GET'  => [ TagsController::class , 'getSuggestions' ],
@@ -151,7 +151,7 @@ class ApiController
 
         foreach ($endpoints as $search => $methods) {
             $m = array();
-            if (preg_match("#^$search$#", $req->path, $m)) {
+            if (preg_match("#^$search#", $req->path, $m)) {
                 $this->log->notice('preg_match found', array_merge(['search' => $search], ['Req Path' => $req->path], ['m' => $m]));
                 $classDescr = $methods[$req->method] ?? null;
                 $this->log->info('methods[req->method] assigned to classDescr', ['ClassDescr' => $classDescr]);
@@ -206,7 +206,7 @@ class ApiController
                     // $instance->$classMethod($param);
 
                     $tempObj = new $class($req, $response);
-                    call_user_func([$tempObj, $classMethod]);
+                    call_user_func([$tempObj, $classMethod], $args);
 
                     $executed = true;
 
