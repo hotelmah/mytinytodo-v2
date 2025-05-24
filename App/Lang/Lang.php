@@ -19,7 +19,7 @@ use App\Utility2;
 class Lang
 {
     protected static $instance;
-    protected static $langDir = '../App/Lang/';
+    protected static $langDir = 'App/Lang/';
     protected $code = 'en';
     protected $default = 'en';
     protected $strings;
@@ -170,6 +170,7 @@ class Lang
     public function getExtensionLang(string $ext): ?array
     {
         $langDir = MTT_EXT . $ext . '/lang/';
+
         if (!is_dir($langDir)) {
             return null;
         }

@@ -11,7 +11,7 @@ class BaseController
         extract($data);
 
         ob_start();
-        require_once("../App/Views/$view.php");
+        require_once("App/Views/$view.php");
         return ob_get_clean();
     }
 }

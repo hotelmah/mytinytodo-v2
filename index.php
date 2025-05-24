@@ -8,7 +8,7 @@ declare(strict_types=1);
     Licensed under the GNU GPL version 2 or any later. See file COPYRIGHT for details.
 */
 
-require_once('../vendor/autoload.php');
+require_once('vendor/autoload.php');
 
 use App\Route;
 use App\Config\Config;
@@ -30,6 +30,7 @@ use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 use App\Controllers\HelloController;
 use App\Controllers\HomeController;
 use App\Controllers\ApiController;
+use App\API\TasksController;
 
 use Monolog\Level;
 use Monolog\Logger;
@@ -133,7 +134,7 @@ $_mttinfo = array();
 
 // create a log channel
 $log = new Logger('Index');
-$log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
+$log->pushHandler(new StreamHandler('Logs/MTT-Test-1.log', Level::Debug));
 
 $log->pushProcessor(function ($record) {
     $record->extra['REQ_METHOD'] = $_SERVER['REQUEST_METHOD'];
@@ -149,6 +150,7 @@ $container = new Container();
 /* ===================================================================================================================== */
 
 $container->add(ApiController::class)->addArgument($log);
+$container->add(TasksController::class)->addArgument($log);
 // $container->add(Basic::class)->addArgument('Gee');
 // $container->add(Logger::class)->addArgument('hello');
 
@@ -177,6 +179,7 @@ $router->map('GET', '/mytinytodo/', [HomeController::class, 'index']);
 $router->map('GET', '/mytinytodo/api/lists', [ApiController::class, 'index']);
 $router->map('GET', '/mytinytodo/api', [ApiController::class, 'index']);
 $router->map('POST', '/mytinytodo/api/tasks/newCounter', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
 $router->map('GET', '/mytinytodo/api/tagCloud/{id}', [ApiController::class, 'index']);
 $router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
 

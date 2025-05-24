@@ -32,9 +32,13 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
+
     public function get()
     {
+        $this->log->withName('TasksController');
+        $this->log->info('Started TasksController Get');
         $listId = (int)Utility2::get('list');
+        $this->log->info('listID', ['listID' => $listId]);
         ApiController::checkReadAccess($listId);
         $db = DBConnection::instance();
         $dbcore = DBCore::default();
@@ -54,6 +58,7 @@ class TasksController extends ApiRequestResponse
         }
 
         $tag = trim(Utility2::get('t'));
+        $this->log->info('tag', ['tag' => $tag]);
         if ($tag != '') {
             $at = explode(',', $tag);
             $tagIds = array(); # [ [id1,id2], [id3]... ]
@@ -151,7 +156,7 @@ class TasksController extends ApiRequestResponse
         while ($r = $q->fetchAssoc()) {
             $t['total']++;
             if ($listId == -1 && $r['list_id']) {
-                $r['list_name'] = $userLists[ (string)$r['list_id'] ] ?? '((undefined))';
+                $r['list_name'] = $userLists[(string)$r['list_id']] ?? '((undefined))';
             }
             $t['list'][] = $this->prepareTaskRow($r);
         }
@@ -162,6 +167,7 @@ class TasksController extends ApiRequestResponse
             ListsController::setListSortingById($listId, $sort);
         }
         $this->response->data = $t;
+        $this->log->notice('End of Get', ['t' => $t]);
     }
 
     /**

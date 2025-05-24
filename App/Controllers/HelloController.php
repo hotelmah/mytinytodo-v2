@@ -15,7 +15,7 @@ class HelloController extends BaseController
     public function __construct()
     {
         $this->log = new Logger('HelloController');
-        $this->log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
+        $this->log->pushHandler(new StreamHandler('Logs/MTT-Test-1.log', Level::Debug));
 
         $this->log->pushProcessor(function ($record) {
             $record->extra['REQ_URI'] = $_SERVER['REQUEST_URI'];

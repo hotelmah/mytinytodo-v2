@@ -205,7 +205,7 @@ class ApiController
                     // $instance = new $class($req, $response);
                     // $instance->$classMethod($param);
 
-                    $tempObj = new $class($req, $response);
+                    $tempObj = new $class($req, $response, $this->log);
                     call_user_func([$tempObj, $classMethod], $args);
 
                     $executed = true;

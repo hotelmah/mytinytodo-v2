@@ -13,9 +13,9 @@ function js_options()
 {
     // Here we can use URIs instead of full URLs.
     $homeUrl = htmlspecialchars(Config::getUrl('url'));
+    // $homeUrl = 'http://php-dl.kevinp.net/mytinytodo';
     if ($homeUrl == '') {
         // $homeUrl = Utility::getMttinfo('mtt_uri');
-        $homeUrl = '';
     }
     $a = array(
         "token" => htmlspecialchars(Utility::accessToken()),
@@ -31,7 +31,7 @@ function js_options()
         "showdateInline" => Config::get('showdateInline') ? true : false,
         "duedatepickerformat" => htmlspecialchars(Config::get('dateformat2')),
         "firstdayofweek" => (int) Config::get('firstdayofweek'),
-        "calendarIcon" => Utility::getMttinfo('theme_url') . 'images/calendar.svg',
+        "calendarIcon" => Utility::getMttinfo('theme_url') . 'Assets/images/calendar.svg',
         "autotag" => Config::get('autotag') ? true : false,
         "markdown" => Config::get('markup') == 'v1' ? false : true,
         "newTaskCounter" => Config::get('newTaskCounter') ? true : false,
@@ -54,26 +54,25 @@ function js_options()
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title><?php Utility::mttinfo('title'); ?></title>
-    <base href="Public/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/gif" href="<?php Utility::mttinfo('theme_url'); ?>images/logo.gif">
-    <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>css/style.css?v=<?php Utility::filever('theme', 'style.css'); ?>" media="all">
-    <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>css/markdown.css?v=<?php Utility::filever('theme', 'markdown.css'); ?>" media="all">
+    <link rel="icon" type="image/gif" href="<?php Utility::mttinfo('theme_url'); ?>Assets/images/logo.gif">
+    <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>Assets/css/style.css?v=<?php Utility::filever('theme', 'style.css'); ?>" media="all">
+    <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>Assets/css/markdown.css?v=<?php Utility::filever('theme', 'markdown.css'); ?>" media="all">
     <?php if (Utility::getMttinfo('appearance') == 'system') : ?>
-        <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>css/dark.css?v=<?php Utility::filever('theme', 'dark.css'); ?>" media="screen and (prefers-color-scheme:dark)">
+        <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>Assets/css/dark.css?v=<?php Utility::filever('theme', 'dark.css'); ?>" media="screen and (prefers-color-scheme:dark)">
     <?php elseif (Utility::getMttinfo('appearance') == 'dark') : ?>
-        <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>css/dark.css?v=<?php Utility::filever('theme', 'dark.css'); ?>" media="screen">
+        <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>Assets/css/dark.css?v=<?php Utility::filever('theme', 'dark.css'); ?>" media="screen">
     <?php endif; ?>
-    <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>css/print.css?v=<?php Utility::filever('theme', 'print.css'); ?>" media="print">
+    <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>Assets/css/print.css?v=<?php Utility::filever('theme', 'print.css'); ?>" media="print">
     <?php if (Config::get('rtl')) : ?>
-        <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>css/style_rtl.css?v=<?php Utility::filever('theme', 'style_rtl.css'); ?>" media="all">
+        <link rel="stylesheet" type="text/css" href="<?php Utility::mttinfo('theme_url'); ?>Assets/css/style_rtl.css?v=<?php Utility::filever('theme', 'style_rtl.css'); ?>" media="all">
     <?php endif; ?>
     <?php MTTNotificationCenter::doAction('theme_head_end'); ?>
-    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>js/jquery.min.js?v=3.7.1"></script>
-    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>js/jquery-ui.min.js?v=1.13.2"></script>
-    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>js/jquery.ui.touch-punch.js?v=1.0.8-2"></script>
-    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>js/mytinytodo.js?v=<?php Utility::filever('content', 'mytinytodo.js'); ?>"></script>
-    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>js/mytinytodo_api.js?v=<?php Utility::filever('content', 'mytinytodo_api.js'); ?>"></script>
+    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>Assets/js/jquery.min.js?v=3.7.1"></script>
+    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>Assets/js/jquery-ui.min.js?v=1.13.2"></script>
+    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>Assets/js/jquery.ui.touch-punch.js?v=1.0.8-2"></script>
+    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>Assets/js/mytinytodo.js?v=<?php Utility::filever('content', 'mytinytodo.js'); ?>"></script>
+    <script type="text/javascript" src="<?php Utility::mttinfo('content_url'); ?>Assets/js/mytinytodo_api.js?v=<?php Utility::filever('content', 'mytinytodo_api.js'); ?>"></script>
 
     <script type="text/javascript">
         $().ready(function() {

@@ -364,10 +364,10 @@ class Config
 
     public static function loadDatabaseConfig()
     {
-        $exists = file_exists('../App/Config/config.database.php');
+        $exists = file_exists('App/Config/config.database.php');
         $defined = false;
         if ($exists) {
-            require_once('../App/Config/config.database.php');
+            require_once('App/Config/config.database.php');
             $defined = defined('MTT_DB_TYPE');
         }
         # It seems not installed
@@ -420,7 +420,7 @@ class Config
             # SQLite3 Database
             $db = DBConnection::init(new DatabaseSqlite3([]));
             $db->connect([
-                'filename' => '../todolist.db'
+                'filename' => 'todolist.db'
             ]);
         } else {
             die("Incorrect database connection config");
