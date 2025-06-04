@@ -115,13 +115,6 @@ if (!defined('MTT_DISABLE_EXT')) {
 
 /* ===================================================================================================================== */
 
-//Parse query string
-if (isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] != '') {
-    Route::parseRoute($_SERVER['QUERY_STRING']);
-}
-
-/* ===================================================================================================================== */
-
 if (!is_int(Config::get('firstdayofweek')) || Config::get('firstdayofweek') < 0 || Config::get('firstdayofweek') > 6) {
     Config::set('firstdayofweek', 1);
 }
@@ -176,11 +169,32 @@ $log->info('Added Strategy to Router for Dependency Injection');
 
 // map a route
 $router->map('GET', '/mytinytodo/', [HomeController::class, 'index']);
+
 $router->map('GET', '/mytinytodo/api/lists', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/lists', [ApiController::class, 'index']);
+$router->map('PUT', '/mytinytodo/api/lists', [ApiController::class, 'index']);
+
+$router->map('GET', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
+$router->map('PUT', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
+$router->map('DELETE', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
+
 $router->map('GET', '/mytinytodo/api', [ApiController::class, 'index']);
-$router->map('POST', '/mytinytodo/api/tasks/newCounter', [ApiController::class, 'index']);
+
+$router->map('GET', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
 $router->map('POST', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
+$router->map('PUT', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
+
+$router->map('POST', '/mytinytodo/api/tasks/parseTitle', [ApiController::class, 'index']);
+
+$router->map('POST', '/mytinytodo/api/tasks/newCounter', [ApiController::class, 'index']);
+
+$router->map('PUT', '/mytinytodo/api/tasks/{id}', [ApiController::class, 'index']);
+$router->map('DELETE', '/mytinytodo/api/tasks/{id}', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/tasks/{id}', [ApiController::class, 'index']);
+
 $router->map('GET', '/mytinytodo/api/tagCloud/{id}', [ApiController::class, 'index']);
+
 $router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
 
 try {

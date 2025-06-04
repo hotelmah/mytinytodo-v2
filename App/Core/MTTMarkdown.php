@@ -41,14 +41,14 @@ final class MTTMarkdown
         return self::markdownToHtml($note, $toExternal);
     }
 
-    public function markdownToHtml($s, $toExternal = false)
+    public static function markdownToHtml($s, $toExternal = false)
     {
         return MTTMarkdown::instance()->convert($s, $toExternal);
     }
 
 
     // Convert note's raw text to html with allowed elements (b,i,u,s and raw urls)
-    public function mttMarkupV1($s)
+    public static function mttMarkupV1($s)
     {
         //hide allowed elements from escaping
         $c1 = chr(1);

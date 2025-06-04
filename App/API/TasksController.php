@@ -21,11 +21,18 @@ use App\Core\MTTNotification;
 use App\Core\MTTNotificationCenter;
 use App\Core\MTTMarkdown;
 use App\Lang\Lang;
+use monolog\Logger;
 use Exception;
 use DateTimeImmutable;
 
 class TasksController extends ApiRequestResponse
 {
+    public function __construct(ApiRequest $req, ApiResponse $response, Logger $logger)
+    {
+        parent::__construct($req, $response, $logger);
+        $this->log = $this->log->withName('TasksController');
+    }
+
     /**
      * Get tasks.
      * Filters are set with query parameters.
@@ -33,11 +40,10 @@ class TasksController extends ApiRequestResponse
      * @throws Exception
      */
 
-    public function get()
+    public function get(array $args = [])
     {
-        $this->log->withName('TasksController');
-        $this->log->info('Started TasksController Get');
-        $listId = (int)Utility2::get('list');
+        $this->log->info('Started Get');
+        $listId = (int)Utility2::get('list', (int)($args['id'] ?? -1));
         $this->log->info('listID', ['listID' => $listId]);
         ApiController::checkReadAccess($listId);
         $db = DBConnection::instance();
@@ -176,20 +182,36 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function post()
+    public function post(array $args = [])
     {
+        $this->log->info('Started Post');
+        $this->log->info('args', ['args' => $args]);
+
         $action = $this->req->jsonBody['action'] ?? '';
+        $this->log->info('action', ['action' => $action]);
+
         if ($action == 'order') { //compatibility
+            $this->log->info('action is order');
             ApiController::checkWriteAccess();
+            $this->log->info('checkWriteAccess done');
             $this->response->data = $this->changeTaskOrder();
+            $this->log->info('Response data', ['data' => $this->response->data]);
         } else {
-            $listId = (int)($this->req->jsonBody['list'] ?? 0);
+            $this->log->info('action is not order');
+            // $listId = (int)($this->req->jsonBody['list'] ?? 0);
+            $listId = (int)($args['id'] ?? 0);
+            $this->log->info('listId', ['listId' => $listId]);
+
             ApiController::checkWriteAccess($listId);
+            $this->log->info('checkWriteAccess done', ['listId' => $listId]);
             if ($action == 'newFull') {
+                $this->log->info('action is newFull');
                 $this->response->data = $this->fullNewTaskInList($listId);
             } else {
+                $this->log->info('action is newSimple');
                 $this->response->data = $this->newTaskInList($listId);
             }
+            $this->log->info('Post END. Response data', ['data' => $this->response->data]);
         }
     }
 
@@ -357,10 +379,12 @@ class TasksController extends ApiRequestResponse
 
     private function newTaskInList(int $listId): ?array
     {
+        $this->log->info('Started New task in list', ['listId' => $listId]);
         $db = DBConnection::instance();
         $t = array();
         $t['total'] = 0;
         $title = trim($this->req->jsonBody['title'] ?? '');
+        $this->log->info('title', ['title' => $title]);
         $prio = 0;
         $tags = '';
         $duedate = null;
@@ -398,6 +422,7 @@ class TasksController extends ApiRequestResponse
         MTTNotificationCenter::postNotification(MTTNotification::DIDCREATETASK, $task);
         $t['list'][] = $task;
         $t['total'] = 1;
+        $this->log->info('New task created. End of function', ['task' => $task]);
         return $t;
     }
 

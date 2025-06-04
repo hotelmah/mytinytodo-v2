@@ -21,6 +21,5 @@ abstract class ApiRequestResponse
         $this->req = $req;
         $this->response = $response;
         $this->log = $logger;
-        // $this->log = $logger->withName('TasksController');
     }
 }

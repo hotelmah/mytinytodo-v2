@@ -134,7 +134,9 @@ class ApiController
             }
         }
 
-        $tempString = (count($request->getQueryParams()) > 0) ? '/mytinytodo/api/tasks&list=1&' . http_build_query($request->getQueryParams()) : $request->getUri()->getPath() . ((isset($args[0])) ? '/' . $args[0] : "");
+        // $tempString = (count($request->getQueryParams()) > 0) ? '/mytinytodo/api/tasks&list=1&' . http_build_query($request->getQueryParams()) : $request->getUri()->getPath() . ((isset($args[0])) ? '/' . $args[0] : "");
+        // Use the actual request path for endpoint matching
+        $tempString = $request->getUri()->getPath();
         $req = new ApiRequest($tempString);
         $this->log->info('Argument sent to MTT Request', ['path' => $tempString]);
         $this->log->info('MTT Request Created');
@@ -296,17 +298,18 @@ class ApiController
     public static function checkReadAccess(?int $listId = null)
     {
         Utility::checkToken();
-        $db = DBConnection::instance();
         if (Utility::isLogged()) {
             return true;
         }
 
+        $db = DBConnection::instance();
         if ($listId !== null) {
             $id = $db->sq("SELECT id FROM {$db->prefix}lists WHERE id=? AND published=1", array($listId));
             if ($id) {
                 return;
             }
         }
+
         Utility::jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
     }
 
