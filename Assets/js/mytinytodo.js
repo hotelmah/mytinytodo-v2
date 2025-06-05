@@ -2905,7 +2905,7 @@ function showSettings(json = 0)
         reload = true;
     }
     const jsonParam = (json == 1) ? '&json=1' : '';
-    $('#page_ajax').load(_mtt.mttUrl + 'settings.php?ajax=yes' + jsonParam, null, function(){
+    $('#page_ajax').load(_mtt.mttUrl + 'settings?ajax=yes' + jsonParam, null, function(){
         if (!reload) {
             _mtt.pageSet('ajax','settings');
             const newTitle = _mtt.lang.get('set_header') + ' - ' + _mtt.options.title;
@@ -2921,11 +2921,12 @@ function saveSettings(frm)
     var params = { save:'ajax' };
     $(frm).find("input:hidden,input:text,input:password,input:checked,select,textarea").filter(":enabled").each(function() { params[this.name || '__'] = this.value; });
     $(frm).find(":submit").attr('disabled','disabled').blur();
-    $.post(_mtt.mttUrl+'settings.php', params, function(json){
+    $.post(_mtt.mttUrl+'settings', params, function(json){
         if(json.saved) {
             flashInfo(_mtt.lang.get('settingsSaved'));
-            setTimeout( function(){
-                // window.location.assign(_mtt.homeUrl); //window.location.reload();
+            setTimeout( function() {
+                window.location.assign(_mtt.homeUrl);
+                // window.location.reload();
             }, 1000);
         }
     }, 'json');
@@ -2937,7 +2938,7 @@ function activateExtension(activate, ext)
         'activate': activate ? 1 : 0,
         'ext': ext
     }
-    $.post(_mtt.mttUrl+'settings.php', params, function(json){
+    $.post(_mtt.mttUrl+'settings', params, function(json){
         if(json.saved) {
             flashInfo(_mtt.lang.get('settingsSaved'));
             showSettings(0);

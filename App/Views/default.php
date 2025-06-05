@@ -13,6 +13,7 @@ function js_options()
 {
     // Here we can use URIs instead of full URLs.
     $homeUrl = htmlspecialchars(Config::getUrl('url'));
+
     // $homeUrl = 'http://php-dl.kevinp.net/mytinytodo';
     if ($homeUrl == '') {
         // $homeUrl = Utility::getMttinfo('mtt_uri');

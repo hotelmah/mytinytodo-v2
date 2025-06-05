@@ -70,41 +70,43 @@ class ApiController
             Utility::updateToken();
         }
 
+        $this->log->info('Index function Started');
         $this->log->info('Args Dump', [$args]);
         $this->log->info('League Request Query String', [$request->getQueryParams()]);
+        $this->log->info('League Request Method', [$request->getMethod()]);
 
         $endpoints = array(
+            '/mytinytodo/api/lists/(-?\d+)' => [
+                'GET'     => [ ListsController::class , 'getId' ],
+                'PUT'     => [ ListsController::class , 'putId' ],
+                'DELETE'  => [ ListsController::class , 'deleteId' ],
+                'POST'    => [ ListsController::class , 'putId' ], //compatibility
+            ],
             '/mytinytodo/api/lists' => [
                 'GET'  => [ ListsController::class , 'get' ],
                 'POST' => [ ListsController::class , 'post' ],
                 'PUT'  => [ ListsController::class , 'put' ],
             ],
-            '/lists/(-?\d+)' => [
-                'GET'     => [ ListsController::class , 'getId' ],
-                'PUT'     => [ ListsController::class , 'putId' ],
-                'DELETE'  => [ ListsController::class , 'deleteId' ],
-                'POST'    => [ ListsController::class , 'putId' ], //compatibility
+            '/mytinytodo/api/tasks/parseTitle' => [
+                'POST' => [ TasksController::class , 'postTitleParse' ],
+            ],
+            '/mytinytodo/api/tasks/newCounter' => [
+                'POST' => [ TasksController::class , 'postNewCounter' ],
+            ],
+            '/mytinytodo/api/tasks/(-?\d+)' => [
+                'PUT'     => [ TasksController::class , 'putId' ],
+                'DELETE'  => [ TasksController::class , 'deleteId' ],
+                'POST'    => [ TasksController::class , 'putId' ], //compatibility
             ],
             '/mytinytodo/api/tasks' => [
                 'GET'  => [ TasksController::class , 'get' ],
                 'POST' => [ TasksController::class , 'post' ],
                 'PUT'  => [ TasksController::class , 'put' ],
             ],
-            '/tasks/(-?\d+)' => [
-                'PUT'     => [ TasksController::class , 'putId' ],
-                'DELETE'  => [ TasksController::class , 'deleteId' ],
-                'POST'    => [ TasksController::class , 'putId' ], //compatibility
-            ],
-            '/tasks/parseTitle' => [
-                'POST' => [ TasksController::class , 'postTitleParse' ],
-            ],
-            '/mytinytodo/api/tasks/newCounter' => [
-                'POST' => [ TasksController::class , 'postNewCounter' ],
-            ],
             '/mytinytodo/api/tagCloud/(-?\d+)' => [
                 'GET'  => [TagsController::class, 'getCloud', $args],
             ],
-            '/suggestTags' => [
+            '/mytinytodo/api/suggestTags' => [
                 'GET'  => [ TagsController::class , 'getSuggestions' ],
             ],
             '/(login|logout|session)' => [
@@ -230,7 +232,7 @@ class ApiController
                 $this->log->error('Unknown Endpoint MTT DEBUG TRUE', array_merge(['class' => $class], ['classMethod' => $classMethod], ['Req Method' => $req->method], ['Req Path' => $req->path]));
                 $response->htmlContent("Unknown endpoint: {$req->method} {$req->path}", 404)->exit();
             }
-            $this->log->error('Unknown Endpoint MTT DEBUG FALSE', array_merge(['class' => $class], ['classMethod' => $classMethod], ['Req Method' => $req->method], ['Req Path' => $req->path]));
+            $this->log->error('Unknown Endpoint MTT DEBUG FALSE', array_merge(['class' => is_null($class) ? 'NULL' : $class], ['classMethod' => is_null($classMethod) ? 'NULL' : $classMethod], ['Req Method' => $req->method], ['Req Path' => $req->path]));
             $response->htmlContent("Unknown endpoint", 404)->exit();
         }
         $this->log->info('Response exit called. Looks like executed');

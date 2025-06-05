@@ -198,8 +198,8 @@ class TasksController extends ApiRequestResponse
             $this->log->info('Response data', ['data' => $this->response->data]);
         } else {
             $this->log->info('action is not order');
-            // $listId = (int)($this->req->jsonBody['list'] ?? 0);
-            $listId = (int)($args['id'] ?? 0);
+            $listId = (int)($this->req->jsonBody['list'] ?? 0);
+            // $listId = (int)($args['id'] ?? 0);
             $this->log->info('listId', ['listId' => $listId]);
 
             ApiController::checkWriteAccess($listId);

@@ -25,19 +25,11 @@ use Monolog\Handler\StreamHandler;
 
 class ListsController extends ApiRequestResponse
 {
-    // private Logger $log;
-
-    // public function __construct()
-    // {
-    //     $this->log = new Logger('ListsController');
-    //     $this->log->pushHandler(new StreamHandler('../Logs/MTT-Test-1.log', Level::Debug));
-
-    //     $this->log->pushProcessor(function ($record) {
-    //         $record->extra['REQ_URI'] = $_SERVER['REQUEST_URI'];
-
-    //         return $record;
-    //     });
-    // }
+    public function __construct(ApiRequest $req, ApiResponse $response, Logger $logger)
+    {
+        parent::__construct($req, $response, $logger);
+        $this->log = $this->log->withName('ListsController');
+    }
 
     /**
      * Get all lists
@@ -81,13 +73,17 @@ class ListsController extends ApiRequestResponse
      */
     public function post()
     {
+        $this->log->info('Post Started');
         ApiController::checkWriteAccess();
+        $this->log->info('Check Write Access Passed and Completed');
         $action = $this->req->jsonBody['action'] ?? '';
+        $this->log->info('action', ['action' => $action]);
         switch ($action) {
             case 'order':
                 $this->response->data = $this->changeListOrder();
                 break; //compatibility
             case 'new':
+                $this->response->data = $this->createList();
                 break;
             default:
                 $this->response->data = $this->createList();
