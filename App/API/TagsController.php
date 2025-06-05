@@ -13,17 +13,25 @@ namespace App\API;
 use App\Controllers\ApiController;
 use App\Database\DBConnection;
 use App\Utility2;
+use monolog\Logger;
 
 class TagsController extends ApiRequestResponse
 {
+    public function __construct(ApiRequest $req, ApiResponse $response, Logger $logger)
+    {
+        parent::__construct($req, $response, $logger);
+        $this->log = $this->log->withName('TagsController');
+    }
+
     /**
      * Get tag cloud
      * @return void
      * @throws Exception
      */
-    public function getCloud($listId)
+    public function getCloud(array $args = [])
     {
-        $listId = (int)$listId;
+        $listId = (int)$args['id'];
+        $this->log->info("Get tag cloud for list $listId");
         ApiController::checkReadAccess($listId);
         $db = DBConnection::instance();
 

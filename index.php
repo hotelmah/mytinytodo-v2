@@ -31,6 +31,7 @@ use App\Controllers\HelloController;
 use App\Controllers\HomeController;
 use App\Controllers\ApiController;
 use App\API\TasksController;
+use App\API\TagsController;
 
 use Monolog\Level;
 use Monolog\Logger;
@@ -141,6 +142,7 @@ $container = new Container();
 
 $container->add(ApiController::class)->addArgument($log);
 $container->add(TasksController::class)->addArgument($log);
+$container->add(TagsController::class)->addArgument($log);
 // $container->add(Basic::class)->addArgument('Gee');
 // $container->add(Logger::class)->addArgument('hello');
 
@@ -192,7 +194,7 @@ $router->map('GET', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
 $router->map('POST', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
 $router->map('PUT', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
 
-$router->map('GET', '/mytinytodo/api/tagCloud/{id}', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/tagCloud/{id:-?\d+}', [ApiController::class, 'index']);
 
 $router->map('GET', '/mytinytodo/settings', [HomeController::class, 'settings']);
 $router->map('POST', '/mytinytodo/settings', [HomeController::class, 'settings']);
