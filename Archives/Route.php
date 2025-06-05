@@ -26,7 +26,7 @@ class Route
         }
     }
 
-    public static function redirectWithHashRoute(array $hash, array $q = [])
+    private static function redirectWithHashRoute(array $hash, array $q = [])
     {
         $url = Utility::getUnsafeMttinfo('url');
         $query = http_build_query($q);
