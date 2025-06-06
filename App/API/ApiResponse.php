@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\API;
 
-use App\Utility;
+use App\Utility\Response;
 
 class ApiResponse
 {
@@ -47,6 +47,6 @@ class ApiResponse
             }
             exit();
         }
-        Utility::jsonExit($this->data);
+        Response::jsonExit($this->data);
     }
 }

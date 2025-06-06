@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace App\Lang;
 
-use App\Utility2;
+use App\Utility\Html;
 
 class Lang
 {
@@ -147,7 +147,7 @@ class Lang
         ]);
         $a['_rtl'] = $this->rtl() ? 1 : 0;
 
-        return ($escape ? Utility2::htmlarray($a) : $a);
+        return ($escape ? Html::htmlarray($a) : $a);
     }
 
     protected function fillWithValues(array &$a, array $keys)

@@ -10,9 +10,9 @@ declare(strict_types=1);
 
 namespace App\API;
 
-use App\Controllers\ApiController;
 use App\Database\DBConnection;
-use App\Utility2;
+use App\Utility\Authentication;
+use App\Utility\Request;
 use monolog\Logger;
 
 class TagsController extends ApiRequestResponse
@@ -32,7 +32,7 @@ class TagsController extends ApiRequestResponse
     {
         $listId = (int)$args['id'];
         $this->log->info("Get tag cloud for list $listId");
-        ApiController::checkReadAccess($listId);
+        Authentication::checkReadAccess($listId);
         $db = DBConnection::instance();
 
         $sqlWhere = ($listId == -1) ? "" : "WHERE list_id = $listId";
@@ -87,10 +87,10 @@ class TagsController extends ApiRequestResponse
      */
     public function getSuggestions($listId)
     {
-        $listId = (int)Utility2::get('list');
-        ApiController::checkWriteAccess($listId);
+        $listId = (int)Request::get('list');
+        Authentication::checkWriteAccess($listId);
         $db = DBConnection::instance();
-        $begin = trim(Utility2::get('q'));
+        $begin = trim(Request::get('q'));
         $limit = 8;
         $q = $db->dq("SELECT name, tag_id AS id FROM {$db->prefix}tags
                       INNER JOIN {$db->prefix}tag2task ON id=tag_id

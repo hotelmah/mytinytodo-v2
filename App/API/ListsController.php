@@ -10,18 +10,17 @@ declare(strict_types=1);
 
 namespace App\API;
 
-use App\Controllers\ApiController;
-use App\Utility;
-use App\Utility2;
+use App\Utility\Authentication;
+use App\Utility\Html;
+use App\Utility\Formatter;
+use App\Utility\Security;
 use App\Config\Config;
 use App\Database\DBConnection;
 use App\Database\DBCore;
 use App\Core\MTTNotification;
 use App\Core\MTTNotificationCenter;
-use Exception;
-use Monolog\Level;
 use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Exception;
 
 class ListsController extends ApiRequestResponse
 {
@@ -41,10 +40,10 @@ class ListsController extends ApiRequestResponse
         $db = DBConnection::instance();
         // $this->log->notice('Inside ListsController GET');
 
-        Utility::checkToken();
+        Authentication::checkToken();
         $t = array();
         $t['total'] = 0;
-        $haveWriteAccess = ApiController::haveWriteAccess();
+        $haveWriteAccess = Authentication::haveWriteAccess();
         // $this->log->info('haveWriteAccess Set', ['haveWriteAccess' => $haveWriteAccess]);
         if (!$haveWriteAccess) {
             $sqlWhere = 'WHERE published=1';
@@ -74,7 +73,7 @@ class ListsController extends ApiRequestResponse
     public function post()
     {
         $this->log->info('Post Started');
-        ApiController::checkWriteAccess();
+        Authentication::checkWriteAccess();
         $this->log->info('Check Write Access Passed and Completed');
         $action = $this->req->jsonBody['action'] ?? '';
         $this->log->info('action', ['action' => $action]);
@@ -97,7 +96,7 @@ class ListsController extends ApiRequestResponse
      */
     public function put()
     {
-        ApiController::checkWriteAccess();
+        Authentication::checkWriteAccess();
         $action = $this->req->jsonBody['action'] ?? '';
         switch ($action) {
             case 'order':
@@ -117,16 +116,17 @@ class ListsController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function getId($id)
+    public function getId(array $args = [])
     {
-        ApiController::checkReadAccess($id);
+        $id = (int)$args['id'] ?? -1;
+        Authentication::checkReadAccess($id);
         $db = DBConnection::instance();
         $r = $db->sqa("SELECT * FROM {$db->prefix}lists WHERE id=?", array($id));
         if (!$r) {
             $this->response->data = null;
             return;
         }
-        $t = $this->prepareList($r, ApiController::haveWriteAccess());
+        $t = $this->prepareList($r, Authentication::haveWriteAccess());
         $this->response->data = $t;
     }
 
@@ -136,9 +136,10 @@ class ListsController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function deleteId($id)
+    public function deleteId(array $args = [])
     {
-        ApiController::checkWriteAccess();
+        $id = (int)$args['id'] ?? 0;
+        Authentication::checkWriteAccess();
         $this->response->data = $this->deleteList($id);
     }
 
@@ -150,10 +151,10 @@ class ListsController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function putId($id)
+    public function putId(array $args = [])
     {
-        ApiController::checkWriteAccess();
-        $id = (int)$id;
+        $id = (int)$args['id'] ?? 0;
+        Authentication::checkWriteAccess();
 
         $action = $this->req->jsonBody['action'] ?? '';
         switch ($action) {
@@ -211,7 +212,7 @@ class ListsController extends ApiRequestResponse
 
         return array(
             'id' => -1,
-            'name' => Utility2::htmlarray(Utility::__('alltasks')),
+            'name' => Html::htmlarray(Formatter::__('alltasks')),
             'sort' => $sort,
             'published' => 0,
             'showCompl' => $showCompleted,
@@ -245,7 +246,7 @@ class ListsController extends ApiRequestResponse
 
         return array(
             'id' => $row['id'],
-            'name' => Utility2::htmlarray($row['name']),
+            'name' => Html::htmlarray($row['name']),
             'sort' => (int)$row['sorting'],
             'published' => $row['published'] ? 1 : 0,
             'showCompl' => $taskview & 1 ? 1 : 0,
@@ -345,7 +346,7 @@ class ListsController extends ApiRequestResponse
         if ($flag == 0) {
             $extra['feedKey'] = '';
         } else {
-            $extra['feedKey'] = Utility2::randomString();
+            $extra['feedKey'] = Security::randomString();
         }
         $json = json_encode($extra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $db->ex("UPDATE {$db->prefix}lists SET extra=?,d_edited=? WHERE id=$listId", array($json, time()));

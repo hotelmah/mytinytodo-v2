@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
-use App\Utility;
+use App\Utility\Info;
 use App\Database\DBCore;
 
 class Route
@@ -28,7 +28,7 @@ class Route
 
     private static function redirectWithHashRoute(array $hash, array $q = [])
     {
-        $url = Utility::getUnsafeMttinfo('url');
+        $url = Info::getUnsafeMttinfo('url');
         $query = http_build_query($q);
 
         if ($query != '') {

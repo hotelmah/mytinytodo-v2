@@ -10,9 +10,10 @@ declare(strict_types=1);
 
 require_once('vendor/autoload.php');
 
-use App\Route;
 use App\Config\Config;
-use App\Utility;
+use App\Utility\Authentication;
+use App\Utility\Http;
+use App\Utility\Extensions;
 use App\Lang\Lang;
 use App\Core\MTTNotificationCenter;
 
@@ -21,25 +22,24 @@ use League\Route\Strategy\ApplicationStrategy;
 
 use League\Route\Http\Exception\NotFoundException;
 use League\Route\Http\Exception\ForbiddenException;
+use League\Route\Http\Exception\MethodNotAllowedException as ExceptionMethodNotAllowedException;
 
 use Symfony\Component\HttpFoundation\Request;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 
-use App\Controllers\HelloController;
 use App\Controllers\HomeController;
 use App\Controllers\ApiController;
 use App\API\TasksController;
 use App\API\TagsController;
+use App\Controllers\HelloController;
 
 use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
 use League\Container\Container;
-use League\Route\Http\Exception\MethodNotAllowedException as ExceptionMethodNotAllowedException;
-use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 
 /* ===================================================================================================================== */
 
@@ -95,20 +95,21 @@ if ($lang->rtl()) {
 
 /* ===================================================================================================================== */
 
-if (Utility::needAuth() && !isset($dontStartSession)) {
-    Utility::setupAndStartSession();
+if (Authentication::needAuth() && !isset($dontStartSession)) {
+    Authentication::setupAndStartSession();
 }
-Utility::setNocacheHeaders();
 
-if (Utility::accessToken() == '') {
-    Utility::updateToken();
+Http::setNocacheHeaders();
+
+if (Authentication::accessToken() == '') {
+    Authentication::updateToken();
 }
 
 /* ===================================================================================================================== */
 
 if (!defined('MTT_DISABLE_EXT')) {
     define('MTT_EXT', 'ext/');
-    Utility::loadExtensions();
+    Extensions::loadExtensions();
 }
 
 /* ===================================================================================================================== */

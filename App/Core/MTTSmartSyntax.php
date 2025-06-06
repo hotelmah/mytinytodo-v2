@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 namespace App\Core;
 
-use App\Utility2;
+use App\Utility\Formatter;
 use DateTime;
 use DateInterval;
 use App\Config\Config;
@@ -101,7 +101,7 @@ class MTTSmartSyntax implements MTTSmartSyntaxInterface
                     $y += $yy;
                     $m = $m - $yy * 12;
                 }
-                $d = min($d, Utility2::daysInMonth($m, $y));
+                $d = min($d, Formatter::daysInMonth($m, $y));
                 return "$y-$m-$d";
             }
         }
@@ -220,7 +220,7 @@ class MTTSmartSyntax implements MTTSmartSyntaxInterface
         if ($m > 12) {
             $m = 12;
         }
-        $maxdays = Utility2::daysInMonth($m, $y);
+        $maxdays = Formatter::daysInMonth($m, $y);
         if ($m < 10) {
             $m = '0' . $m;
         }

@@ -10,10 +10,9 @@ declare(strict_types=1);
 
 namespace App\API;
 
-use App\Utility;
-use App\Utility2;
+use App\Utility\Security;
+use App\Utility\Authentication;
 use App\Config\Config;
-use App\Domain\User\User;
 
 class AuthController extends ApiRequestResponse
 {
@@ -36,16 +35,16 @@ class AuthController extends ApiRequestResponse
 
     private function login(): ?array
     {
-        Utility::checkToken();
+        Authentication::checkToken();
         $t = array('logged' => 0);
-        if (!Utility::needAuth()) {
+        if (!Authentication::needAuth()) {
             $t['disabled'] = 1;
             return $t;
         }
         $password = $this->req->jsonBody['password'] ?? '';
-        if (Utility2::isPasswordEqualsToHash($password, Config::get('password'))) {
-            Utility::updateSessionLogged(true);
-            $t['token'] = Utility::updateToken();
+        if (Security::isPasswordEqualsToHash($password, Config::get('password'))) {
+            Authentication::updateSessionLogged(true);
+            $t['token'] = Authentication::updateToken();
             $t['logged'] = 1;
         }
         return $t;
@@ -53,9 +52,9 @@ class AuthController extends ApiRequestResponse
 
     private function logout(): ?array
     {
-        Utility::checkToken();
-        Utility::updateSessionLogged(false);
-        Utility::updateToken();
+        Authentication::checkToken();
+        Authentication::updateSessionLogged(false);
+        Authentication::updateToken();
         session_regenerate_id(true);
         $t = array('logged' => 0);
         return $t;
@@ -64,14 +63,14 @@ class AuthController extends ApiRequestResponse
     private function createSession(): ?array
     {
         $t = array();
-        if (!Utility::needAuth()) {
+        if (!Authentication::needAuth()) {
             $t['disabled'] = 1;
             return $t;
         }
-        if (Utility::accessToken() == '') {
-            Utility::updateToken();
+        if (Authentication::accessToken() == '') {
+            Authentication::updateToken();
         }
-        $t['token'] = Utility::accessToken();
+        $t['token'] = Authentication::accessToken();
         $t['session'] = session_id();
         return $t;
     }

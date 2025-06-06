@@ -10,9 +10,11 @@ declare(strict_types=1);
 
 namespace App\API;
 
-use App\Controllers\ApiController;
-use App\Utility;
-use App\Utility2;
+use App\Utility\Authentication;
+use App\Utility\Request;
+use App\Utility\Security;
+use App\Utility\Formatter;
+use App\Utility\Html;
 use App\Database\DBConnection;
 use App\Database\DBCore;
 use App\Config\Config;
@@ -22,8 +24,8 @@ use App\Core\MTTNotificationCenter;
 use App\Core\MTTMarkdown;
 use App\Lang\Lang;
 use monolog\Logger;
-use Exception;
 use DateTimeImmutable;
+use Exception;
 
 class TasksController extends ApiRequestResponse
 {
@@ -43,9 +45,9 @@ class TasksController extends ApiRequestResponse
     public function get(array $args = [])
     {
         $this->log->info('Started Get');
-        $listId = (int)Utility2::get('list', (int)($args['id'] ?? -1));
+        $listId = (int)Request::get('list', (int)($args['id'] ?? -1));
         $this->log->info('listID', ['listID' => $listId]);
-        ApiController::checkReadAccess($listId);
+        Authentication::checkReadAccess($listId);
         $db = DBConnection::instance();
         $dbcore = DBCore::default();
 
@@ -59,11 +61,11 @@ class TasksController extends ApiRequestResponse
             $sqlWhereListId = "todo.list_id=" . $listId;
         }
 
-        if (Utility2::get('compl') == 0) {
+        if (Request::get('compl') == 0) {
             $sqlWhere .= ' AND compl=0';
         }
 
-        $tag = trim(Utility2::get('t'));
+        $tag = trim(Request::get('t'));
         $this->log->info('tag', ['tag' => $tag]);
         if ($tag != '') {
             $at = explode(',', $tag);
@@ -97,7 +99,7 @@ class TasksController extends ApiRequestResponse
             }
         }
 
-        $s = trim(Utility2::get('s'));
+        $s = trim(Request::get('s'));
         if ($s != '') {
             if (preg_match("|^#(\d+)$|", $s, $m)) {
                 $sqlWhere .= " AND todo.id = " . (int)$m[1];
@@ -106,7 +108,7 @@ class TasksController extends ApiRequestResponse
             }
         }
 
-        $sort = (int)Utility2::get('sort');
+        $sort = (int)Request::get('sort');
         $sqlSort = "ORDER BY compl ASC, ";
         // sortings are same as in DBCore::getTasksByListId
         if ($sort == 0) {
@@ -166,10 +168,10 @@ class TasksController extends ApiRequestResponse
             }
             $t['list'][] = $this->prepareTaskRow($r);
         }
-        if (Utility2::get('setCompl') && ApiController::haveWriteAccess($listId)) {
-            ListsController::setListShowCompletedById($listId, !(Utility2::get('compl') == 0));
+        if (Request::get('setCompl') && Authentication::haveWriteAccess($listId)) {
+            ListsController::setListShowCompletedById($listId, !(Request::get('compl') == 0));
         }
-        if (Utility2::get('saveSort') == 1 && ApiController::haveWriteAccess($listId)) {
+        if (Request::get('saveSort') == 1 && Authentication::haveWriteAccess($listId)) {
             ListsController::setListSortingById($listId, $sort);
         }
         $this->response->data = $t;
@@ -192,7 +194,7 @@ class TasksController extends ApiRequestResponse
 
         if ($action == 'order') { //compatibility
             $this->log->info('action is order');
-            ApiController::checkWriteAccess();
+            Authentication::checkWriteAccess();
             $this->log->info('checkWriteAccess done');
             $this->response->data = $this->changeTaskOrder();
             $this->log->info('Response data', ['data' => $this->response->data]);
@@ -202,7 +204,7 @@ class TasksController extends ApiRequestResponse
             // $listId = (int)($args['id'] ?? 0);
             $this->log->info('listId', ['listId' => $listId]);
 
-            ApiController::checkWriteAccess($listId);
+            Authentication::checkWriteAccess($listId);
             $this->log->info('checkWriteAccess done', ['listId' => $listId]);
             if ($action == 'newFull') {
                 $this->log->info('action is newFull');
@@ -222,7 +224,7 @@ class TasksController extends ApiRequestResponse
      */
     public function put()
     {
-        ApiController::checkWriteAccess();
+        Authentication::checkWriteAccess();
         $action = $this->req->jsonBody['action'] ?? '';
         switch ($action) {
             case 'order':
@@ -241,10 +243,11 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function deleteId($id)
+    public function deleteId(array $args = [])
     {
-        ApiController::checkWriteAccess();
-        $this->response->data = $this->deleteTask((int)$id);
+        $id = (int)$args['id'] ?? 0;
+        Authentication::checkWriteAccess();
+        $this->response->data = $this->deleteTask($id);
     }
 
     /**
@@ -255,7 +258,7 @@ class TasksController extends ApiRequestResponse
      */
     public function putId($id)
     {
-        ApiController::checkWriteAccess();
+        Authentication::checkWriteAccess();
         $id = (int)$id;
 
         if (!DBCore::default()->taskExists($id)) {
@@ -296,7 +299,7 @@ class TasksController extends ApiRequestResponse
      */
     public function postTitleParse()
     {
-        ApiController::checkWriteAccess();
+        Authentication::checkWriteAccess();
         $t = array(
             'title' => trim($this->req->jsonBody['title'] ?? ''),
             'prio' => 0,
@@ -318,14 +321,14 @@ class TasksController extends ApiRequestResponse
 
     public function postNewCounter()
     {
-        ApiController::checkReadAccess();
+        Authentication::checkReadAccess();
         $lists = $this->req->jsonBody['lists'] ?? [];
         if (!is_array($lists)) {
             $lists = [];
         }
 
         $userLists = []; // [string]
-        if (!ApiController::haveWriteAccess()) {
+        if (!Authentication::haveWriteAccess()) {
             $userLists = $this->getUserListsSimple(true);
             if ($userLists) {
                 $sqlWhereList = "AND list_id IN (" . implode(',', $userLists) . ")";
@@ -409,7 +412,7 @@ class TasksController extends ApiRequestResponse
         $ow = 1 + (int)$db->sq("SELECT MAX(ow) FROM {$db->prefix}todolist WHERE list_id=$listId AND compl=0");
         $date = time();
         $db->ex("BEGIN");
-        $db->dq("INSERT INTO {$db->prefix}todolist (uuid,list_id,title,d_created,d_edited,ow,prio,duedate) VALUES (?,?,?,?,?,?,?,?)", array(Utility2::generateUUID(), $listId, $title, $date, $date, $ow, $prio, $duedate));
+        $db->dq("INSERT INTO {$db->prefix}todolist (uuid,list_id,title,d_created,d_edited,ow,prio,duedate) VALUES (?,?,?,?,?,?,?,?)", array(Security::generateUUID(), $listId, $title, $date, $date, $ow, $prio, $duedate));
         $id = (int) $db->lastInsertId();
         if ($tags != '') {
             $aTags = $this->prepareTags($tags);
@@ -454,7 +457,7 @@ class TasksController extends ApiRequestResponse
         $ow = 1 + (int)$db->sq("SELECT MAX(ow) FROM {$db->prefix}todolist WHERE list_id=$listId AND compl=0");
         $date = time();
         $db->ex("BEGIN");
-        $db->dq("INSERT INTO {$db->prefix}todolist (uuid,list_id,title,d_created,d_edited,ow,prio,note,duedate) VALUES (?,?,?,?,?,?,?,?,?)", array(Utility2::generateUUID(), $listId, $title, $date, $date, $ow, $prio, $note, $duedate));
+        $db->dq("INSERT INTO {$db->prefix}todolist (uuid,list_id,title,d_created,d_edited,ow,prio,note,duedate) VALUES (?,?,?,?,?,?,?,?,?)", array(Security::generateUUID(), $listId, $title, $date, $date, $ow, $prio, $note, $duedate));
         $id = (int) $db->lastInsertId();
         if ($tags != '') {
             $aTags = $this->prepareTags($tags);
@@ -695,14 +698,14 @@ class TasksController extends ApiRequestResponse
     {
         $lang = Lang::instance();
         $dueA = $this->prepareDuedate($r['duedate']);
-        $dCreated = Utility::timestampToDatetime($r['d_created']);
+        $dCreated = Formatter::timestampToDatetime($r['d_created']);
         $isEdited = ($r['d_edited'] != $r['d_created']);
-        $dEdited = $isEdited ? Utility::timestampToDatetime($r['d_edited']) : '';
-        $dCompleted = $r['d_completed'] ? Utility::timestampToDatetime($r['d_completed']) : '';
+        $dEdited = $isEdited ? Formatter::timestampToDatetime($r['d_edited']) : '';
+        $dCompleted = $r['d_completed'] ? Formatter::timestampToDatetime($r['d_completed']) : '';
         if (!Config::get('showtime')) {
-            $dCreatedFull = Utility::timestampToDatetime($r['d_created'], true);
-            $dEditedFull = $isEdited ? Utility::timestampToDatetime($r['d_edited'], true) : '';
-            $dCompletedFull = $r['d_completed'] ? Utility::timestampToDatetime($r['d_completed'], true) : '';
+            $dCreatedFull = Formatter::timestampToDatetime($r['d_created'], true);
+            $dEditedFull = $isEdited ? Formatter::timestampToDatetime($r['d_edited'], true) : '';
+            $dCompletedFull = $r['d_completed'] ? Formatter::timestampToDatetime($r['d_completed'], true) : '';
         } else {
             $dCreatedFull = $dCreated;
             $dEditedFull = $dEdited;
@@ -714,31 +717,31 @@ class TasksController extends ApiRequestResponse
             'title' => MTTMarkdown::titleMarkup($r['title']),
             'titleText' => (string)$r['title'],
             'listId' => $r['list_id'],
-            'listName' => Utility2::htmlarray($r['list_name'] ?? ''),
-            'date' => Utility2::htmlarray($dCreated),
+            'listName' => Html::htmlarray($r['list_name'] ?? ''),
+            'date' => Html::htmlarray($dCreated),
             'dateInt' => (int)$r['d_created'],
-            'dateFull' => Utility2::htmlarray($dCreatedFull),
-            'dateInlineTitle' => Utility2::htmlarray(sprintf($lang->get('taskdate_inline_created'), $dCreated)), //TODO: move preparing of *inlineTitle to js
-            'dateEdited' => Utility2::htmlarray($dEdited),
+            'dateFull' => Html::htmlarray($dCreatedFull),
+            'dateInlineTitle' => Html::htmlarray(sprintf($lang->get('taskdate_inline_created'), $dCreated)), //TODO: move preparing of *inlineTitle to js
+            'dateEdited' => Html::htmlarray($dEdited),
             'dateEditedInt' => (int)$r['d_edited'],
-            'dateEditedFull' => Utility2::htmlarray($dEditedFull),
-            'dateEditedInlineTitle' => Utility2::htmlarray(sprintf($lang->get('taskdate_inline_edited'), $dEdited)),
+            'dateEditedFull' => Html::htmlarray($dEditedFull),
+            'dateEditedInlineTitle' => Html::htmlarray(sprintf($lang->get('taskdate_inline_edited'), $dEdited)),
             'isEdited' => (bool)$isEdited,
-            'dateCompleted' => Utility2::htmlarray($dCompleted),
-            'dateCompletedFull' => Utility2::htmlarray($dCompletedFull),
-            'dateCompletedInlineTitle' => Utility2::htmlarray(sprintf($lang->get('taskdate_inline_completed'), $dCompleted)),
+            'dateCompleted' => Html::htmlarray($dCompleted),
+            'dateCompletedFull' => Html::htmlarray($dCompletedFull),
+            'dateCompletedInlineTitle' => Html::htmlarray(sprintf($lang->get('taskdate_inline_completed'), $dCompleted)),
             'compl' => (int)$r['compl'],
             'prio' => $r['prio'],
             'note' => MTTMarkdown::noteMarkup($r['note']),
             'noteText' => (string)$r['note'],
             'ow' => (int)$r['ow'],
-            'tags' => Utility2::htmlarray($r['tags'] ?? ''),
-            'tags_ids' => Utility2::htmlarray($r['tags_ids'] ?? ''),
-            'duedate' => Utility2::htmlarray($dueA['formatted']),
+            'tags' => Html::htmlarray($r['tags'] ?? ''),
+            'tags_ids' => Html::htmlarray($r['tags_ids'] ?? ''),
+            'duedate' => Html::htmlarray($dueA['formatted']),
             'dueClass' => $dueA['class'],
-            'dueStr' => Utility2::htmlarray($dueA['str']),
+            'dueStr' => Html::htmlarray($dueA['str']),
             'dueInt' => $this->date2int($r['duedate']),
-            'dueTitle' => Utility2::htmlarray(sprintf($lang->get('taskdate_inline_duedate'), $dueA['formattedlong'])),
+            'dueTitle' => Html::htmlarray(sprintf($lang->get('taskdate_inline_duedate'), $dueA['formattedlong'])),
         );
     }
 
@@ -772,37 +775,37 @@ class TasksController extends ApiRequestResponse
 
         if ($days < -7 && !$thisYear) {
             $a['class'] = 'past';
-            $a['str'] = Utility2::formatDate3(Config::get('dateformat2'), $y, $m, $d, $lang);
+            $a['str'] = Formatter::formatDate3(Config::get('dateformat2'), $y, $m, $d, $lang);
         } elseif ($days < -7) {
             $a['class'] = 'past';
-            $a['str'] = Utility2::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+            $a['str'] = Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days < -1) {
              $a['class'] = 'past';
-             $a['str'] = !$exact ? sprintf($lang->get('daysago'), abs($days)) : Utility2::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+             $a['str'] = !$exact ? sprintf($lang->get('daysago'), abs($days)) : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days == -1) {
              $a['class'] = 'past';
-             $a['str'] = !$exact ? $lang->get('yesterday') : Utility2::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+             $a['str'] = !$exact ? $lang->get('yesterday') : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days == 0) {
             $a['class'] = 'today';
-            $a['str'] = !$exact ? $lang->get('today') : Utility2::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+            $a['str'] = !$exact ? $lang->get('today') : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days == 1) {
             $a['class'] = 'today';
-            $a['str'] = !$exact ? $lang->get('tomorrow') : Utility2::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+            $a['str'] = !$exact ? $lang->get('tomorrow') : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days <= 7) {
             $a['class'] = 'soon';
-            $a['str'] = !$exact ? sprintf($lang->get('indays'), $days) : Utility2::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+            $a['str'] = !$exact ? sprintf($lang->get('indays'), $days) : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($thisYear) {
             $a['class'] = 'future';
-            $a['str'] = Utility2::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+            $a['str'] = Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } else {
             $a['class'] = 'future';
-            $a['str'] = Utility2::formatDate3(Config::get('dateformat2'), $y, $m, $d, $lang);
+            $a['str'] = Formatter::formatDate3(Config::get('dateformat2'), $y, $m, $d, $lang);
         }
 
         #avoid short year
         $fmt = str_replace('y', 'Y', Config::get('dateformat2'));
-        $a['formatted'] = Utility::formatTime($fmt, $a['timestamp']);
-        $a['formattedlong'] = Utility::formatTime(Config::get('dateformat'), $a['timestamp']);
+        $a['formatted'] = Formatter::formatTime($fmt, $a['timestamp']);
+        $a['formattedlong'] = Formatter::formatTime(Config::get('dateformat'), $a['timestamp']);
 
         return $a;
     }

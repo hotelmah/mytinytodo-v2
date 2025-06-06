@@ -4,55 +4,26 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\API\AuthController;
 use App\API\ListsController;
 use App\API\TasksController;
 use App\API\TagsController;
 use App\API\ExtSettingsController;
-use App\API\AuthController;
 use App\Core\MTTExtensionLoader;
 use App\Core\MTTHttpApiExtender;
 use App\API\ApiRequest;
 use App\API\ApiResponse;
-use App\Database\DBConnection;
-use App\Utility;
-use Monolog\Level;
+use App\Utility\Authentication;
 use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Exception;
-use Throwable;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
-
-// if (!defined('MTTPATH')) {
-//     define('MTTPATH', dirname(__FILE__) . '/');
-// }
-
-// if (!defined('MTTINC')) {
-//     define('MTTINC', MTTPATH . 'includes/');
-// }
 
 /*
     This file is a part of myTinyTodo.
     (C) Copyright 2022-2023 Max Pozdeev <maxpozdeev@gmail.com>
     Licensed under the GNU GPL version 2 or any later. See file COPYRIGHT for details.
 */
-
-// require_once('init.php');
-
-// if (MTT_DEBUG) {
-//     set_error_handler('myErrorHandler'); //catch Notices, Warnings
-//     set_exception_handler('myExceptionHandler');
-// }
-// else {
-//     ini_set('display_errors', '0');
-// }
-
-// require_once(MTTINC. 'api/ListsController.php');
-// require_once(MTTINC. 'api/TasksController.php');
-// require_once(MTTINC. 'api/TagsController.php');
-// require_once(MTTINC. 'api/AuthController.php');
-// require_once(MTTINC. 'api/ExtSettingsController.php');
 
 class ApiController
 {
@@ -66,8 +37,8 @@ class ApiController
 
     public function index(ServerRequestInterface $request, array $args): ResponseInterface
     {
-        if (Utility::accessToken() == '') {
-            Utility::updateToken();
+        if (Authentication::accessToken() == '') {
+            Authentication::updateToken();
         }
 
         $this->log->info('Index function Started');
@@ -152,7 +123,6 @@ class ApiController
 
         /* ===================================================================================================================== */
 
-
         foreach ($endpoints as $search => $methods) {
             $m = array();
             if (preg_match("#^$search#", $req->path, $m)) {
@@ -180,7 +150,7 @@ class ApiController
                     if (false == ($classDescr[2] ?? false)) { //TODO: describe $classDescr[2]
                         $this->log->notice('CheckWriteAccess since isExtMEthod TRUE');
                         // By default all extension methods require write access rights
-                        self::checkWriteAccess();
+                        Authentication::checkWriteAccess();
                     }
                 }
 
@@ -240,107 +210,5 @@ class ApiController
 
         $responseBody = $psr17Factory->createStream(json_encode($response->data));
         return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
-    }
-
-    /* ===================================================================================================================== */
-
-    public static function myErrorHandler($errno, $errstr, $errfile, $errline)
-    {
-        if ($errno == E_ERROR || $errno == E_CORE_ERROR || $errno == E_COMPILE_ERROR || $errno == E_USER_ERROR || $errno == E_PARSE) {
-            $error = 'Error';
-        } elseif ($errno == E_WARNING || $errno == E_CORE_WARNING || $errno == E_COMPILE_WARNING || $errno == E_USER_WARNING || $errno == E_STRICT) {
-            if (error_reporting() & $errno) {
-                $error = 'Warning';
-            } else {
-                return;
-            }
-        } elseif ($errno == E_NOTICE || $errno == E_USER_NOTICE || $errno == E_DEPRECATED || $errno == E_USER_DEPRECATED) {
-            if (error_reporting() & $errno) {
-                $error = 'Notice';
-            } else {
-                return;
-            }
-        } else {
-            $error = "Error ($errno)"; // here may be E_RECOVERABLE_ERROR
-        }
-        throw new Exception("$error: '$errstr' in $errfile:$errline", -1);
-    }
-
-    /* ===================================================================================================================== */
-
-    public static function myExceptionHandler(Throwable $e)
-    {
-        // to avoid Exception thrown without a stack frame
-        try {
-            if (-1 == $e->getCode()) {
-                //thrown in myErrorHandler
-                http_response_code(500);
-                Utility::logAndDie($e->getMessage());
-            }
-
-            $c = get_class($e);
-            $errText = "Exception ($c): '" . $e->getMessage() . "' in " . $e->getFile() . ":" . $e->getLine();
-
-            if (MTT_DEBUG) {
-                if (count($e->getTrace()) > 0) {
-                    $errText .= "\n" . $e->getTraceAsString() ;
-                }
-            }
-            http_response_code(500);
-            Utility::logAndDie($errText);
-        } catch (Exception $e) {
-            http_response_code(500);
-            Utility::logAndDie('Exception in ExceptionHandler: \'' . $e->getMessage() . '\' in ' . $e->getFile() . ':' . $e->getLine());
-        }
-        exit;
-    }
-
-    /* ===================================================================================================================== */
-
-    public static function checkReadAccess(?int $listId = null)
-    {
-        Utility::checkToken();
-        if (Utility::isLogged()) {
-            return true;
-        }
-
-        $db = DBConnection::instance();
-        if ($listId !== null) {
-            $id = $db->sq("SELECT id FROM {$db->prefix}lists WHERE id=? AND published=1", array($listId));
-            if ($id) {
-                return;
-            }
-        }
-
-        Utility::jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
-    }
-
-    public static function checkWriteAccess(?int $listId = null)
-    {
-        Utility::checkToken();
-        if (self::haveWriteAccess($listId)) {
-            return;
-        }
-
-        http_response_code(403);
-
-        Utility::jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
-    }
-
-    public static function haveWriteAccess(?int $listId = null): bool
-    {
-        if (Utility::isReadonly()) {
-            return false;
-        }
-        // check list exist
-        if ($listId !== null && $listId != -1) {
-            $db = DBConnection::instance();
-            $count = $db->sq("SELECT COUNT(*) FROM {$db->prefix}lists WHERE id=?", array($listId));
-
-            if (!$count) {
-                return false;
-            }
-        }
-        return true;
     }
 }

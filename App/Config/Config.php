@@ -8,15 +8,15 @@
 
 namespace App\Config;
 
-use Exception;
-use App\Utility;
-use App\Utility2;
+use App\Utility\Security;
+use App\Utility\Response;
 use App\Database\DBConnection;
 use App\Database\DBCore;
 use App\Database\DatabaseSqlite3;
 use App\Database\DatabaseMysqli;
 use App\Database\DatabaseMysql;
 use App\Database\DatabasePostgres;
+use Exception;
 
 class Config
 {
@@ -128,7 +128,7 @@ class Config
                 $key = 'db.driver';
                 $val = 'mysqli';
             } elseif ($key == 'password' && $val != '') {
-                $val = Utility2::passwordHash($val); // in v1.7 password is hashed
+                $val = Security::passwordHash($val); // in v1.7 password is hashed
             }
 
             if (!isset(self::$dbparams[$key])) {
@@ -335,7 +335,7 @@ class Config
         $a[] = self::prepareDbDefine("MTT_DB_NAME", self::get('db.name')) . "\n";
         $a[] = self::prepareDbDefine("MTT_DB_PREFIX", self::get('db.prefix')) . "\n";
         $a[] = self::prepareDbDefine("MTT_DB_DRIVER", self::get('db.driver')) . "\n";
-        $a[] = self::prepareDbDefine("MTT_SALT", defined('MTT_SALT') ? MTT_SALT : Utility2::generateUUID()) . "\n";
+        $a[] = self::prepareDbDefine("MTT_SALT", defined('MTT_SALT') ? MTT_SALT : Security::generateUUID()) . "\n";
         return implode("\n", $a);
     }
 
@@ -418,7 +418,7 @@ class Config
                 $msg = (MTT_DB_TYPE === 'mysql')
                     ? "Failed to connect to mysql database: "
                     : "Failed to connect to PostgreSQL database: ";
-                Utility::logAndDie($msg . $e->getMessage());
+                Response::logAndDie($msg . $e->getMessage());
             }
             $db->dq(MTT_DB_TYPE === 'mysql' ? "SET NAMES utf8mb4" : "SET NAMES 'utf8'");
         }

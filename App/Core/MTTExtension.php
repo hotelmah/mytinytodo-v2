@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core;
 
-use App\Utility;
+use App\Utility\Info;
 
 abstract class MTTExtension
 {
@@ -39,7 +39,7 @@ abstract class MTTExtension
 
     public static function extApiActionUrl(string $action, ?string $params = null)
     {
-        $url = Utility::getUnsafeMttinfo('api_url') . 'ext/' . static::BUNDLEID . "/$action";
+        $url = Info::getUnsafeMttinfo('api_url') . 'ext/' . static::BUNDLEID . "/$action";
         if (!is_null($params)) {
             if (false !== strpos($url, '?')) {
                 $url .= '&' . $params;
