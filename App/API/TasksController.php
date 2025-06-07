@@ -256,10 +256,10 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function putId($id)
+    public function putId(array $args = [])
     {
+        $id = (int)$args['id'] ?? 0;
         Authentication::checkWriteAccess();
-        $id = (int)$id;
 
         if (!DBCore::default()->taskExists($id)) {
             $this->response->data = ['total' => 0];

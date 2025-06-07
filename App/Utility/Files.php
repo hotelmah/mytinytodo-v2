@@ -19,28 +19,35 @@ class Files extends Info
      * @return void
      */
 
-    public static function filever(string $dir, string $filename)
+    public static function fileVer(string $dir, string $filename)
     {
         if (!MTT_DEBUG) {
             return self::mttinfo('version');
         }
+
         $prefix = self::getMttinfo('version') . '-' . time();
         $path = null;
-        if ($dir == 'content') {
-            $path = MTTPATH . 'content/';
-        } else if ($dir == 'theme') {
-            $path = MTTPATH . '/';
+
+        if ($dir == 'Assets' . DIRECTORY_SEPARATOR . 'css') {
+            $path = 'Assets' . DIRECTORY_SEPARATOR . 'css/';
+        } else if ($dir == 'Assets' . DIRECTORY_SEPARATOR . 'js') {
+            $path = 'Assets' . DIRECTORY_SEPARATOR . 'js/';
         } else {
             return print($prefix . '-unknown');
         }
+
         $fullPath = $path . $filename;
+
         if (!file_exists($fullPath)) {
             return print($prefix . '-not-found');
         }
+
         $mtime = filemtime($fullPath);
+
         if ($mtime === false) {
             return print($prefix . '-no-access');
         }
+
         return print($mtime);
     }
 }

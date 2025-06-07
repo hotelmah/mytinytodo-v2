@@ -34,7 +34,6 @@ class ApiController
         $this->log = $logger->withName('ApiController');
     }
 
-
     public function index(ServerRequestInterface $request, array $args): ResponseInterface
     {
         if (Authentication::accessToken() == '') {
@@ -42,53 +41,59 @@ class ApiController
         }
 
         $this->log->info('Index function Started');
-        $this->log->info('Args Dump', [$args]);
         $this->log->info('League Request Query String', [$request->getQueryParams()]);
         $this->log->info('League Request Method', [$request->getMethod()]);
 
-        $endpoints = array(
-            '/mytinytodo/api/lists/(-?\d+)' => [
-                'GET'     => [ ListsController::class , 'getId' ],
-                'PUT'     => [ ListsController::class , 'putId' ],
-                'DELETE'  => [ ListsController::class , 'deleteId' ],
-                'POST'    => [ ListsController::class , 'putId' ], //compatibility
-            ],
-            '/mytinytodo/api/lists' => [
-                'GET'  => [ ListsController::class , 'get' ],
-                'POST' => [ ListsController::class , 'post' ],
-                'PUT'  => [ ListsController::class , 'put' ],
-            ],
-            '/mytinytodo/api/tasks/parseTitle' => [
-                'POST' => [ TasksController::class , 'postTitleParse' ],
-            ],
-            '/mytinytodo/api/tasks/newCounter' => [
-                'POST' => [ TasksController::class , 'postNewCounter' ],
-            ],
-            '/mytinytodo/api/tasks/(-?\d+)' => [
-                'PUT'     => [ TasksController::class , 'putId' ],
-                'DELETE'  => [ TasksController::class , 'deleteId' ],
-                'POST'    => [ TasksController::class , 'putId' ], //compatibility
-            ],
-            '/mytinytodo/api/tasks' => [
-                'GET'  => [ TasksController::class , 'get' ],
-                'POST' => [ TasksController::class , 'post' ],
-                'PUT'  => [ TasksController::class , 'put' ],
-            ],
-            '/mytinytodo/api/tagCloud/(-?\d+)' => [
-                'GET'  => [TagsController::class, 'getCloud', $args],
-            ],
-            '/mytinytodo/api/suggestTags' => [
-                'GET'  => [ TagsController::class , 'getSuggestions' ],
-            ],
-            '/(login|logout|session)' => [
-                'POST' => [ AuthController::class , 'postAction' ],
-            ],
-            '/ext-settings/(.+)' => [
-                'GET'     => [ ExtSettingsController::class , 'get' ],
-                'PUT'     => [ ExtSettingsController::class , 'put' ],
-                'POST'    => [ ExtSettingsController::class , 'put' ], //compatibility
-            ]
-        );
+        $this->log->info('Request', ['getParsedBody' => $request->getParsedBody()]);
+        if (isset($request->getParsedBody()['password'])) {
+            $args['password'] = $request->getParsedBody()['password'];
+        }
+
+        $this->log->info('Args Dump', [$args]);
+
+        // $endpoints = array(
+        //     '/mytinytodo/api/lists/(-?\d+)' => [
+        //         'GET'     => [ ListsController::class , 'getId'],
+        //         'PUT'     => [ ListsController::class , 'putId'],
+        //         'DELETE'  => [ ListsController::class , 'deleteId'],
+        //         'POST'    => [ ListsController::class , 'putId'], //compatibility
+        //     ],
+        //     '/mytinytodo/api/lists' => [
+        //         'GET'  => [ ListsController::class , 'get'],
+        //         'POST' => [ ListsController::class , 'post'],
+        //         'PUT'  => [ ListsController::class , 'put'],
+        //     ],
+        //     '/mytinytodo/api/tasks/parseTitle' => [
+        //         'POST' => [ TasksController::class , 'postTitleParse'],
+        //     ],
+        //     '/mytinytodo/api/tasks/newCounter' => [
+        //         'POST' => [ TasksController::class , 'postNewCounter'],
+        //     ],
+        //     '/mytinytodo/api/tasks/(-?\d+)' => [
+        //         'PUT'     => [ TasksController::class , 'putId'],
+        //         'DELETE'  => [ TasksController::class , 'deleteId'],
+        //         'POST'    => [ TasksController::class , 'putId'], //compatibility
+        //     ],
+        //     '/mytinytodo/api/tasks' => [
+        //         'GET'  => [ TasksController::class , 'get'],
+        //         'POST' => [ TasksController::class , 'post'],
+        //         'PUT'  => [ TasksController::class , 'put'],
+        //     ],
+        //     '/mytinytodo/api/tagCloud/(-?\d+)' => [
+        //         'GET'  => [TagsController::class, 'getCloud'],
+        //     ],
+        //     '/mytinytodo/api/suggestTags' => [
+        //         'GET'  => [ TagsController::class , 'getSuggestions'],
+        //     ],
+        //     '/mytinytodo/api/(login|logout|session)' => [
+        //         'POST' => [ AuthController::class , 'postAction'],
+        //     ],
+        //     '/mytinytodo/api/ext-settings/(.+)' => [
+        //         'GET'     => [ ExtSettingsController::class , 'get'],
+        //         'PUT'     => [ ExtSettingsController::class , 'put'],
+        //         'POST'    => [ ExtSettingsController::class , 'put'], //compatibility
+        //     ]
+        // );
 
         // look for extensions
         foreach (MTTExtensionLoader::loadedExtensions() as $instance) {
@@ -115,7 +120,6 @@ class ApiController
         $this->log->info('MTT Request Created');
         $response = new ApiResponse();
         $executed = false;
-        $data = null;
 
         /* ===================================================================================================================== */
 

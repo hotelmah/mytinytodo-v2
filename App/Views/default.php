@@ -60,23 +60,23 @@ function js_options()
     <title><?php Info::mttinfo('title'); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/gif" href="<?php Info::mttinfo('theme_url'); ?>Assets/images/logo.gif">
-    <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/style.css?v=<?php Files::filever('theme', 'style.css'); ?>" media="all">
-    <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/markdown.css?v=<?php Files::filever('theme', 'markdown.css'); ?>" media="all">
+    <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/style.css?v=<?php Files::fileVer('theme', 'style.css'); ?>" media="all">
+    <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/markdown.css?v=<?php Files::fileVer('theme', 'markdown.css'); ?>" media="all">
     <?php if (Info::getMttinfo('appearance') == 'system') : ?>
-        <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/dark.css?v=<?php Files::filever('theme', 'dark.css'); ?>" media="screen and (prefers-color-scheme:dark)">
+        <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/dark.css?v=<?php Files::fileVer('theme', 'dark.css'); ?>" media="screen and (prefers-color-scheme:dark)">
     <?php elseif (Info::getMttinfo('appearance') == 'dark') : ?>
-        <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/dark.css?v=<?php Files::filever('theme', 'dark.css'); ?>" media="screen">
+        <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/dark.css?v=<?php Files::fileVer('theme', 'dark.css'); ?>" media="screen">
     <?php endif; ?>
-    <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/print.css?v=<?php Files::filever('theme', 'print.css'); ?>" media="print">
+    <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/print.css?v=<?php Files::fileVer('theme', 'print.css'); ?>" media="print">
     <?php if (Config::get('rtl')) : ?>
-        <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/style_rtl.css?v=<?php Files::filever('theme', 'style_rtl.css'); ?>" media="all">
+        <link rel="stylesheet" type="text/css" href="<?php Info::mttinfo('theme_url'); ?>Assets/css/style_rtl.css?v=<?php Files::fileVer('theme', 'style_rtl.css'); ?>" media="all">
     <?php endif; ?>
     <?php MTTNotificationCenter::doAction('theme_head_end'); ?>
     <script type="text/javascript" src="<?php Info::mttinfo('content_url'); ?>Assets/js/jquery.min.js?v=3.7.1"></script>
     <script type="text/javascript" src="<?php Info::mttinfo('content_url'); ?>Assets/js/jquery-ui.min.js?v=1.13.2"></script>
     <script type="text/javascript" src="<?php Info::mttinfo('content_url'); ?>Assets/js/jquery.ui.touch-punch.js?v=1.0.8-2"></script>
-    <script type="text/javascript" src="<?php Info::mttinfo('content_url'); ?>Assets/js/mytinytodo.js?v=<?php Files::filever('content', 'mytinytodo.js'); ?>"></script>
-    <script type="text/javascript" src="<?php Info::mttinfo('content_url'); ?>Assets/js/mytinytodo_api.js?v=<?php Files::filever('content', 'mytinytodo_api.js'); ?>"></script>
+    <script type="text/javascript" src="<?php Info::mttinfo('content_url'); ?>Assets/js/mytinytodo.js?v=<?php Files::fileVer('content', 'mytinytodo.js'); ?>"></script>
+    <script type="text/javascript" src="<?php Info::mttinfo('content_url'); ?>Assets/js/mytinytodo_api.js?v=<?php Files::fileVer('content', 'mytinytodo_api.js'); ?>"></script>
 
     <script type="text/javascript">
         $().ready(function() {

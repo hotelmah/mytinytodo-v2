@@ -13,7 +13,7 @@ class ApiResponse
     public string $contentType = 'application/json';
     public ?int $code = null;
 
-    public function content(string $contentType, string $content, int $code = 200)
+    private function content(string $contentType, string $content, int $code = 200)
     {
         $this->contentType = $contentType;
         $this->content = $content;

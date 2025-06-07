@@ -47,12 +47,14 @@ if (getenv('MTT_ENABLE_DEBUG') == 'YES' || (defined('MTT_DEBUG') && MTT_DEBUG)) 
     if (!defined('MTT_DEBUG')) {
         define('MTT_DEBUG', true);
     }
-    error_reporting(E_ALL);
     ini_set('display_errors', '1');
     ini_set('log_errors', '1');
+
+    error_reporting(E_ALL);
 } else {
     ini_set('display_errors', '0');
     ini_set('log_errors', '1');
+
     if (!defined('MTT_DEBUG')) {
         define('MTT_DEBUG', false);
     }
@@ -201,6 +203,9 @@ $router->map('GET', '/mytinytodo/settings', [HomeController::class, 'settings'])
 $router->map('POST', '/mytinytodo/settings', [HomeController::class, 'settings']);
 
 $router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
+
+$router->addPatternMatcher('adminoptions', '(login|logout|session)');
+$router->map('POST', '/mytinytodo/api/{adminoptions}', [ApiController::class, 'index']);
 
 try {
     $psrResponse = $router->dispatch($psrRequest);

@@ -353,7 +353,7 @@ class Config
     public static function saveDbConfig()
     {
         $contents = self::dbConfigAsFileContents();
-        $f = fopen(MTTPATH . 'config.php', 'w');
+        $f = fopen('App' . DIRECTORY_SEPARATOR . 'Config' . DIRECTORY_SEPARATOR . 'config.database.php', 'w');
         if ($f === false) {
             throw new Exception("Error while saving config file");
         }
@@ -364,7 +364,7 @@ class Config
         //Reset Zend OPcache
         //opcache_get_status() sometimes crashes
         if (function_exists("opcache_invalidate") && 0 != (int)opcache_get_configuration()["directives"]["opcache.enable"]) {
-            opcache_invalidate(MTTPATH . 'config.php', true);
+            opcache_invalidate('App' . DIRECTORY_SEPARATOR . 'Config' . DIRECTORY_SEPARATOR . 'config.database.php', true);
         }
     }
 

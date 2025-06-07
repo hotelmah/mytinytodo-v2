@@ -13,14 +13,25 @@ namespace App\API;
 use App\Utility\Security;
 use App\Utility\Authentication;
 use App\Config\Config;
+use monolog\Logger;
 
 class AuthController extends ApiRequestResponse
 {
-    public function postAction($action)
+    public function __construct(ApiRequest $req, ApiResponse $response, Logger $logger)
     {
+        parent::__construct($req, $response, $logger);
+        $this->log = $this->log->withName('AuthController');
+    }
+
+    public function postAction(array $args = []): void
+    {
+        $action = $args['adminoptions'] ?? '';
+        $this->log->info("AuthController postAction called with action: {$action}");
+
         switch ($action) {
             case 'login':
-                $this->response->data = $this->login();
+                $this->log->info("Login attempt with password: " . (isset($args['password']) ? '***' : 'not provided'));
+                $this->response->data = $this->login(isset($args['password']) ? $args['password'] : '');
                 break;
             case 'logout':
                 $this->response->data = $this->logout();
@@ -33,7 +44,7 @@ class AuthController extends ApiRequestResponse
         }
     }
 
-    private function login(): ?array
+    private function login(string $password): ?array
     {
         Authentication::checkToken();
         $t = array('logged' => 0);
@@ -41,12 +52,13 @@ class AuthController extends ApiRequestResponse
             $t['disabled'] = 1;
             return $t;
         }
-        $password = $this->req->jsonBody['password'] ?? '';
+
         if (Security::isPasswordEqualsToHash($password, Config::get('password'))) {
             Authentication::updateSessionLogged(true);
             $t['token'] = Authentication::updateToken();
             $t['logged'] = 1;
         }
+
         return $t;
     }
 

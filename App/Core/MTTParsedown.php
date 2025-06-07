@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Utility\Info;
 use Parsedown;
-use App\Utility;
 
 class MTTParsedown extends Parsedown
 {
@@ -28,7 +28,7 @@ class MTTParsedown extends Parsedown
     {
         if (preg_match('/^#(\d+)/', $excerpt['text'], $matches)) {
             $attrs = array(
-                'href' => Utility::getMttinfo('url') . '?task=' . $matches[1],
+                'href' => Info::getMttinfo('url') . '?task=' . $matches[1],
                 'target' => '_blank',
             );
             if (!$this->toExternal) {

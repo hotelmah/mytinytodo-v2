@@ -10,8 +10,8 @@ declare(strict_types=1);
 
 namespace App\Database;
 
+use App\Utility\Security;
 use Exception;
-use App\Utility2;
 
 // FIXME: experimental, subject to change
 
@@ -201,7 +201,7 @@ class DBCore
         }
         $ow = 1 + (int)$db->sq("SELECT MAX(ow) FROM {$db->prefix}lists");
         $time = time();
-        $db->dq("INSERT INTO {$db->prefix}lists (uuid,name,ow,d_created,d_edited,taskview) VALUES (?,?,?,?,?,?)", array(Utility2::generateUUID(), $name, $ow, $time, $time, 1));
+        $db->dq("INSERT INTO {$db->prefix}lists (uuid,name,ow,d_created,d_edited,taskview) VALUES (?,?,?,?,?,?)", array(Security::generateUUID(), $name, $ow, $time, $time, 1));
         $id = $db->lastInsertId();
         return (int)$id;
     }
