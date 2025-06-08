@@ -70,7 +70,7 @@ class Info extends UrlPath
                 /* URL for API, like http://localhost/mytinytodo/api/. No need to set by default. */
                 $_mttinfo['api_url'] = Config::getUrl('api_url'); // need to have a trailing slash
                 if ($_mttinfo['api_url'] == '') {
-                    if (defined('MTT_API_USE_PATH_INFO')) {
+                    if (true) {
                         // $_mttinfo['api_url'] = self::getUnsafeMttinfo('mtt_uri') . 'api/';
                         $_mttinfo['api_url'] = '/mytinytodo/api/';
                     } else {

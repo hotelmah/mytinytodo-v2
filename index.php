@@ -10,13 +10,20 @@ declare(strict_types=1);
 
 require_once('vendor/autoload.php');
 
-use App\Config\Config;
-use App\Utility\Authentication;
-use App\Utility\Http;
-use App\Utility\Extensions;
-use App\Lang\Lang;
-use App\Core\MTTNotificationCenter;
+use Symfony\Component\HttpFoundation\Request;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
+use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 
+use App\Controllers\HomeController;
+use App\Controllers\ListsController;
+use App\Controllers\TasksController;
+use App\Controllers\TagsController;
+use App\Controllers\AuthController;
+use App\Controllers\ExtSettingsController;
+use App\Controllers\HelloController;
+
+use League\Container\Container;
 use League\Route\Router;
 use League\Route\Strategy\ApplicationStrategy;
 
@@ -24,22 +31,17 @@ use League\Route\Http\Exception\NotFoundException;
 use League\Route\Http\Exception\ForbiddenException;
 use League\Route\Http\Exception\MethodNotAllowedException as ExceptionMethodNotAllowedException;
 
-use Symfony\Component\HttpFoundation\Request;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
-use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
-
-use App\Controllers\HomeController;
-use App\Controllers\ApiController;
-use App\API\TasksController;
-use App\API\TagsController;
-use App\Controllers\HelloController;
+use App\Config\Config;
+use App\Utility\Authentication;
+use App\Utility\Http;
+use App\Utility\Extensions;
+use App\Core\MTTNotificationCenter;
+use App\Lang\Lang;
 
 use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
-
-use League\Container\Container;
+use Monolog\Handler\NullHandler;
 
 /* ===================================================================================================================== */
 
@@ -59,10 +61,6 @@ if (getenv('MTT_ENABLE_DEBUG') == 'YES' || (defined('MTT_DEBUG') && MTT_DEBUG)) 
         define('MTT_DEBUG', false);
     }
 }
-
-/* ===================================================================================================================== */
-
-define('MTT_API_USE_PATH_INFO', true);
 
 /* ===================================================================================================================== */
 
@@ -101,11 +99,11 @@ if (Authentication::needAuth() && !isset($dontStartSession)) {
     Authentication::setupAndStartSession();
 }
 
-Http::setNocacheHeaders();
-
 if (Authentication::accessToken() == '') {
     Authentication::updateToken();
 }
+
+Http::setNocacheHeaders();
 
 /* ===================================================================================================================== */
 
@@ -128,7 +126,8 @@ $_mttinfo = array();
 
 // create a log channel
 $log = new Logger('Index');
-$log->pushHandler(new StreamHandler('Logs/MTT-Test-1.log', Level::Debug));
+$log->pushHandler(new StreamHandler('Logs/MyTinyTodo-' . date('Y-m-d') . '.log', Level::Debug));
+$log->pushHandler(new NullHandler());
 
 $log->pushProcessor(function ($record) {
     $record->extra['REQ_METHOD'] = $_SERVER['REQUEST_METHOD'];
@@ -143,11 +142,11 @@ $container = new Container();
 
 /* ===================================================================================================================== */
 
-$container->add(ApiController::class)->addArgument($log);
+$container->add(ListsController::class)->addArgument($log);
 $container->add(TasksController::class)->addArgument($log);
 $container->add(TagsController::class)->addArgument($log);
-// $container->add(Basic::class)->addArgument('Gee');
-// $container->add(Logger::class)->addArgument('hello');
+$container->add(AuthController::class)->addArgument($log);
+$container->add(ExtSettingsController::class)->addArgument($log);
 
 /* ===================================================================================================================== */
 
@@ -168,44 +167,46 @@ $log->info('Created Router');
 $router->setStrategy($strategy);
 $log->info('Added Strategy to Router for Dependency Injection');
 
-
 // map a route
 $router->map('GET', '/mytinytodo/', [HomeController::class, 'index']);
 
-$router->map('POST', '/mytinytodo/api/tasks/parseTitle', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/tasks/parseTitle', [TasksController::class, 'postTitleParse']);
 
-$router->map('POST', '/mytinytodo/api/tasks/newCounter', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/tasks/newCounter', [TasksController::class, 'postNewCounter']);
 
-$router->map('GET', '/mytinytodo/api/suggestTags', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/suggestTags', [TagsController::class, 'getSuggestions']);
 
-$router->map('GET', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
-$router->map('PUT', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
-$router->map('DELETE', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
-$router->map('POST', '/mytinytodo/api/lists/{id}', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'getId']);
+$router->map('PUT', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'putId']);
+$router->map('DELETE', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'deleteId']);
+$router->map('POST', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'putId']);
 
-$router->map('GET', '/mytinytodo/api/lists', [ApiController::class, 'index']);
-$router->map('POST', '/mytinytodo/api/lists', [ApiController::class, 'index']);
-$router->map('PUT', '/mytinytodo/api/lists', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/lists', [ListsController::class, 'get']);
+$router->map('POST', '/mytinytodo/api/lists', [ListsController::class, 'post']);
+$router->map('PUT', '/mytinytodo/api/lists', [ListsController::class, 'put']);
 
-$router->map('GET', '/mytinytodo/api', [ApiController::class, 'index']);
+$router->map('PUT', '/mytinytodo/api/tasks/{id:-?\d+}', [TasksController::class, 'putId']);
+$router->map('DELETE', '/mytinytodo/api/tasks/{id:-?\d+}', [TasksController::class, 'deleteId']);
+$router->map('POST', '/mytinytodo/api/tasks/{id:-?\d+}', [TasksController::class, 'putId']);
 
-$router->map('PUT', '/mytinytodo/api/tasks/{id}', [ApiController::class, 'index']);
-$router->map('DELETE', '/mytinytodo/api/tasks/{id}', [ApiController::class, 'index']);
-$router->map('POST', '/mytinytodo/api/tasks/{id}', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/tasks', [TasksController::class, 'get']);
+$router->map('POST', '/mytinytodo/api/tasks', [TasksController::class, 'post']);
+$router->map('PUT', '/mytinytodo/api/tasks', [TasksController::class, 'put']);
 
-$router->map('GET', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
-$router->map('POST', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
-$router->map('PUT', '/mytinytodo/api/tasks', [ApiController::class, 'index']);
-
-$router->map('GET', '/mytinytodo/api/tagCloud/{id:-?\d+}', [ApiController::class, 'index']);
+$router->map('GET', '/mytinytodo/api/tagCloud/{id:-?\d+}', [TagsController::class, 'getCloud']);
 
 $router->map('GET', '/mytinytodo/settings', [HomeController::class, 'settings']);
 $router->map('POST', '/mytinytodo/settings', [HomeController::class, 'settings']);
 
-$router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
-
 $router->addPatternMatcher('adminoptions', '(login|logout|session)');
-$router->map('POST', '/mytinytodo/api/{adminoptions}', [ApiController::class, 'index']);
+$router->map('POST', '/mytinytodo/api/{adminoptions}', [AuthController::class, 'postAction']);
+
+$router->addPatternMatcher('extsettingsopt', '(.+)');
+$router->map('GET', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'get']);
+$router->map('PUT', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
+$router->map('POST', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
+
+$router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
 
 try {
     $psrResponse = $router->dispatch($psrRequest);

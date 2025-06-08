@@ -8,18 +8,21 @@ declare(strict_types=1);
     Licensed under the GNU GPL version 2 or any later. See file COPYRIGHT for details.
 */
 
-namespace App\API;
+namespace App\Controllers;
 
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use App\Database\DBConnection;
 use App\Utility\Authentication;
 use App\Utility\Request;
 use monolog\Logger;
 
-class TagsController extends ApiRequestResponse
+class TagsController extends BaseControllerApi
 {
-    public function __construct(ApiRequest $req, ApiResponse $response, Logger $logger)
+    public function __construct(Logger $logger)
     {
-        parent::__construct($req, $response, $logger);
+        parent::__construct($logger);
         $this->log = $this->log->withName('TagsController');
     }
 
@@ -28,10 +31,13 @@ class TagsController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function getCloud(array $args = [])
+    public function getCloud(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
+        $psr17Factory = new Psr17Factory();
+
         $listId = (int)$args['id'];
         $this->log->info("Get tag cloud for list $listId");
+
         Authentication::checkReadAccess($listId);
         $db = DBConnection::instance();
 
@@ -43,24 +49,27 @@ class TagsController extends ApiRequestResponse
                       ORDER BY tags_count DESC");
         $at = array();
         $ac = array();
+
         while ($r = $q->fetchAssoc()) {
             $at[] = array(
                 'name' => $r['name'],
                 'id' => $r['tag_id']
             );
-            $ac[] = (int) $r['tags_count'];
+            $ac[] = (int)$r['tags_count'];
         }
 
         $t = array();
         $t['total'] = 0;
         $count = count($at);
+
         if (!$count) {
-            $this->response->data = $t;
-            return;
+            $responseBody = $psr17Factory->createStream(json_encode($t));
+            return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
         }
 
         $qmax = max($ac);
         $qmin = min($ac);
+
         if ($count >= 10) {
             $grades = 10;
         } else {
@@ -77,15 +86,21 @@ class TagsController extends ApiRequestResponse
                 'w' => $this->tagWeight($qmin, $ac[$i], $step)
             );
         }
+
         $t['total'] = $count;
-        $this->response->data = $t;
+        $data = $t;
+
+        /* ===================================================================================================================== */
+
+        $responseBody = $psr17Factory->createStream(json_encode($data));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
     /**
      * @return void
      * @throws Exception
      */
-    public function getSuggestions($listId)
+    public function getSuggestions(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         $listId = (int)Request::get('list');
         Authentication::checkWriteAccess($listId);
@@ -102,7 +117,13 @@ class TagsController extends ApiRequestResponse
         while ($r = $q->fetchRow()) {
             $t[] = $r[0];
         }
-        $this->response->data = $t;
+
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode($t));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
     private function tagWeight(int $qmin, int $q, float $step): float

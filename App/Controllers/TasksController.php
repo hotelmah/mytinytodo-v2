@@ -8,16 +8,20 @@ declare(strict_types=1);
     Licensed under the GNU GPL version 2 or any later. See file COPYRIGHT for details.
 */
 
-namespace App\API;
+namespace App\Controllers;
 
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use App\Controllers\ListsController;
+use App\Config\Config;
+use App\Database\DBConnection;
+use App\Database\DBCore;
 use App\Utility\Authentication;
 use App\Utility\Request;
 use App\Utility\Security;
 use App\Utility\Formatter;
 use App\Utility\Html;
-use App\Database\DBConnection;
-use App\Database\DBCore;
-use App\Config\Config;
 use App\Core\MTTSmartSyntax;
 use App\Core\MTTNotification;
 use App\Core\MTTNotificationCenter;
@@ -27,11 +31,11 @@ use monolog\Logger;
 use DateTimeImmutable;
 use Exception;
 
-class TasksController extends ApiRequestResponse
+class TasksController extends BaseControllerApi
 {
-    public function __construct(ApiRequest $req, ApiResponse $response, Logger $logger)
+    public function __construct(Logger $logger)
     {
-        parent::__construct($req, $response, $logger);
+        parent::__construct($logger);
         $this->log = $this->log->withName('TasksController');
     }
 
@@ -41,18 +45,19 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-
-    public function get(array $args = [])
+    public function get(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         $this->log->info('Started Get');
         $listId = (int)Request::get('list', (int)($args['id'] ?? -1));
         $this->log->info('listID', ['listID' => $listId]);
+
         Authentication::checkReadAccess($listId);
         $db = DBConnection::instance();
         $dbcore = DBCore::default();
 
         $sqlWhere = $sqlWhereListId = '';
         $userLists = [];
+
         if ($listId == -1) {
             $userLists = $this->getUserListsSimple();
             $userListsIds = implode(',', array_keys($userLists));
@@ -67,6 +72,7 @@ class TasksController extends ApiRequestResponse
 
         $tag = trim(Request::get('t'));
         $this->log->info('tag', ['tag' => $tag]);
+
         if ($tag != '') {
             $at = explode(',', $tag);
             $tagIds = array(); # [ [id1,id2], [id3]... ]
@@ -110,6 +116,7 @@ class TasksController extends ApiRequestResponse
 
         $sort = (int)Request::get('sort');
         $sqlSort = "ORDER BY compl ASC, ";
+
         // sortings are same as in DBCore::getTasksByListId
         if ($sort == 0) {
             $sqlSort .= "ow ASC";                                           // byHand
@@ -145,6 +152,7 @@ class TasksController extends ApiRequestResponse
         $t['time'] = time();
 
         $groupConcat = '';
+
         if ($db::DBTYPE == DBConnection::DBTYPE_POSTGRES) {
             $groupConcat =  "array_to_string(array_agg(tags.id), ',') AS tags_ids, string_agg(tags.name, ',') AS tags";
         } else {
@@ -168,14 +176,21 @@ class TasksController extends ApiRequestResponse
             }
             $t['list'][] = $this->prepareTaskRow($r);
         }
+
         if (Request::get('setCompl') && Authentication::haveWriteAccess($listId)) {
             ListsController::setListShowCompletedById($listId, !(Request::get('compl') == 0));
         }
+
         if (Request::get('saveSort') == 1 && Authentication::haveWriteAccess($listId)) {
             ListsController::setListSortingById($listId, $sort);
         }
-        $this->response->data = $t;
-        $this->log->notice('End of Get', ['t' => $t]);
+
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode($t));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
     /**
@@ -184,23 +199,23 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function post(array $args = [])
+    public function post(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         $this->log->info('Started Post');
         $this->log->info('args', ['args' => $args]);
 
-        $action = $this->req->jsonBody['action'] ?? '';
+        $action = $request->getParsedBody()['action'] ?? '';
         $this->log->info('action', ['action' => $action]);
 
         if ($action == 'order') { //compatibility
             $this->log->info('action is order');
             Authentication::checkWriteAccess();
             $this->log->info('checkWriteAccess done');
-            $this->response->data = $this->changeTaskOrder();
-            $this->log->info('Response data', ['data' => $this->response->data]);
+            $data = $this->changeTaskOrder($request);
+            $this->log->info('Response data', ['data' => $data]);
         } else {
             $this->log->info('action is not order');
-            $listId = (int)($this->req->jsonBody['list'] ?? 0);
+            $listId = (int)($request->getParsedBody()['list'] ?? 0);
             // $listId = (int)($args['id'] ?? 0);
             $this->log->info('listId', ['listId' => $listId]);
 
@@ -208,13 +223,20 @@ class TasksController extends ApiRequestResponse
             $this->log->info('checkWriteAccess done', ['listId' => $listId]);
             if ($action == 'newFull') {
                 $this->log->info('action is newFull');
-                $this->response->data = $this->fullNewTaskInList($listId);
+                $data = $this->fullNewTaskInList($request, $listId);
             } else {
                 $this->log->info('action is newSimple');
-                $this->response->data = $this->newTaskInList($listId);
+                $data = $this->newTaskInList($request, $listId);
             }
-            $this->log->info('Post END. Response data', ['data' => $this->response->data]);
+            $this->log->info('Post END. Response data', ['data' => $data]);
         }
+
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode($data));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
     /**
@@ -222,18 +244,26 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function put()
+    public function put(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         Authentication::checkWriteAccess();
-        $action = $this->req->jsonBody['action'] ?? '';
+        $action = $request->getParsedBody()['action'] ?? '';
+
         switch ($action) {
             case 'order':
-                $this->response->data = $this->changeTaskOrder();
+                $data = $this->changeTaskOrder($request);
                 break;
             default:
-                $this->response->data = ['total' => 0];
+                $data = ['total' => 0];
                 // error 400 ?
         }
+
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode($data));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
 
@@ -243,11 +273,17 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function deleteId(array $args = [])
+    public function deleteId(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         $id = (int)$args['id'] ?? 0;
         Authentication::checkWriteAccess();
-        $this->response->data = $this->deleteTask($id);
+
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode($this->deleteTask($id)));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
     /**
@@ -256,39 +292,45 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function putId(array $args = [])
+    public function putId(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         $id = (int)$args['id'] ?? 0;
         Authentication::checkWriteAccess();
 
-        if (!DBCore::default()->taskExists($id)) {
-            $this->response->data = ['total' => 0];
-            return;
-        }
+        if (DBCore::default()->taskExists($id)) {
+            $action = $request->getParsedBody()['action'] ?? '';
 
-        $action = $this->req->jsonBody['action'] ?? '';
-        switch ($action) {
-            case 'edit':
-                $this->response->data = $this->editTask($id);
-                break;
-            case 'complete':
-                $this->response->data = $this->completeTask($id);
-                break;
-            case 'note':
-                $this->response->data = $this->editNote($id);
-                break;
-            case 'move':
-                $this->response->data = $this->moveTask($id);
-                break;
-            case 'priority':
-                $this->response->data = $this->priorityTask($id);
-                break;
-            case 'delete':
-                $this->response->data = $this->deleteTask($id);
-                break; //compatibility
-            default:
-                $this->response->data = ['total' => 0];
+            switch ($action) {
+                case 'edit':
+                    $data = $this->editTask($request, $id);
+                    break;
+                case 'complete':
+                    $data = $this->completeTask($request, $id);
+                    break;
+                case 'note':
+                    $data = $this->editNote($request, $id);
+                    break;
+                case 'move':
+                    $data = $this->moveTask($request, $id);
+                    break;
+                case 'priority':
+                    $data = $this->priorityTask($request, $id);
+                    break;
+                case 'delete':
+                    $data = $this->deleteTask($id);
+                    break; //compatibility
+                default:
+                    $data = ['total' => 0];
+            }
+        } else {
+            $data = ['total' => 0];
         }
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode($data));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
 
@@ -297,15 +339,17 @@ class TasksController extends ApiRequestResponse
      * @return void
      * @throws Exception
      */
-    public function postTitleParse()
+    public function postTitleParse(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         Authentication::checkWriteAccess();
+
         $t = array(
-            'title' => trim($this->req->jsonBody['title'] ?? ''),
+            'title' => trim($request->getParsedBody()['title'] ?? ''),
             'prio' => 0,
             'tags' => '',
             'duedate' => '',
         );
+
         if (Config::get('smartsyntax') != 0 && (false !== $a = MTTSmartSyntax::parseSmartSyntax($t['title']))) {
             $t['title'] = (string) ($a['title'] ?? '');
             $t['prio'] = (int) ($a['prio'] ?? 0);
@@ -315,19 +359,26 @@ class TasksController extends ApiRequestResponse
                 $t['duedate'] = $dueA['formatted'];
             }
         }
-        $this->response->data = $t;
+
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode($t));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
-
-    public function postNewCounter()
+    public function postNewCounter(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
         Authentication::checkReadAccess();
-        $lists = $this->req->jsonBody['lists'] ?? [];
+        $lists = $request->getParsedBody()['lists'] ?? [];
+
         if (!is_array($lists)) {
             $lists = [];
         }
 
         $userLists = []; // [string]
+
         if (!Authentication::haveWriteAccess()) {
             $userLists = $this->getUserListsSimple(true);
             if ($userLists) {
@@ -338,7 +389,9 @@ class TasksController extends ApiRequestResponse
                 });
             }
         }
+
         $sqlWhereList = [];
+
         foreach ($lists as $item) {
             $later = (int) ($item['later'] ?? 0);
             $sqlWhereList[] = "(list_id = " . (int)$item['listId'] . " AND compl=0 AND d_created > $later)";
@@ -360,37 +413,37 @@ class TasksController extends ApiRequestResponse
         }
 
         $b = [];
-        $list = (int) ($this->req->jsonBody['list'] ?? 0);
-        $later = (int) ($this->req->jsonBody['later'] ?? 0);
+        $list = (int) ($request->getParsedBody()['list'] ?? 0);
+        $later = (int) ($request->getParsedBody()['later'] ?? 0);
         if ($list > 0 && $later > 0 && (!$userLists || in_array((string)$list, $userLists))) {
-            $q = $db->dq("SELECT id FROM {$db->prefix}todolist
-                          WHERE list_id = $list AND compl=0 AND d_created > $later");
+            $q = $db->dq("SELECT id FROM {$db->prefix}todolist WHERE list_id = $list AND compl=0 AND d_created > $later");
             while ($r = $q->fetchAssoc()) {
                 $b[] = (int)$r['id'];
             }
         }
 
-        $this->response->data = [
-            'ok' => true,
-            'total' => count($b) + count($a),
-            'tasks' => $b,
-            'lists' => $a
-        ];
+        /* ===================================================================================================================== */
+
+        $psr17Factory = new Psr17Factory();
+
+        $responseBody = $psr17Factory->createStream(json_encode(['ok' => true, 'total' => count($b) + count($a), 'tasks' => $b, 'lists' => $a]));
+        return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'application/json');
     }
 
     /* Private Functions */
 
-    private function newTaskInList(int $listId): ?array
+    private function newTaskInList(ServerRequestInterface $request, int $listId): ?array
     {
         $this->log->info('Started New task in list', ['listId' => $listId]);
         $db = DBConnection::instance();
         $t = array();
         $t['total'] = 0;
-        $title = trim($this->req->jsonBody['title'] ?? '');
+        $title = trim($request->getParsedBody()['title'] ?? '');
         $this->log->info('title', ['title' => $title]);
         $prio = 0;
         $tags = '';
         $duedate = null;
+
         if (Config::get('smartsyntax') != 0) {
             $a = MTTSmartSyntax::parseSmartSyntax($title);
             if ($a === false) {
@@ -403,55 +456,65 @@ class TasksController extends ApiRequestResponse
                 $duedate = $a['duedate'];
             }
         }
+
         if ($title == '') {
             return $t;
         }
+
         if (Config::get('autotag')) {
-            $tags .= ',' . ($this->req->jsonBody['tag'] ?? '');
+            $tags .= ',' . ($request->getParsedBody()['tag'] ?? '');
         }
+
         $ow = 1 + (int)$db->sq("SELECT MAX(ow) FROM {$db->prefix}todolist WHERE list_id=$listId AND compl=0");
         $date = time();
         $db->ex("BEGIN");
         $db->dq("INSERT INTO {$db->prefix}todolist (uuid,list_id,title,d_created,d_edited,ow,prio,duedate) VALUES (?,?,?,?,?,?,?,?)", array(Security::generateUUID(), $listId, $title, $date, $date, $ow, $prio, $duedate));
         $id = (int) $db->lastInsertId();
+
         if ($tags != '') {
             $aTags = $this->prepareTags($tags);
             if ($aTags) {
                 $this->addTaskTags($id, $aTags['ids'], $listId);
             }
         }
+
         $db->ex("COMMIT");
         $task = $this->getTaskRowById($id);
         MTTNotificationCenter::postNotification(MTTNotification::DIDCREATETASK, $task);
         $t['list'][] = $task;
         $t['total'] = 1;
+
         $this->log->info('New task created. End of function', ['task' => $task]);
+
         return $t;
     }
 
-    private function fullNewTaskInList(int $listId): ?array
+    private function fullNewTaskInList(ServerRequestInterface $request, int $listId): ?array
     {
         $db = DBConnection::instance();
-        $title = trim($this->req->jsonBody['title'] ?? '');
-        $note = str_replace("\r\n", "\n", $this->req->jsonBody['note'] ?? '');
-        $prio = (int)($this->req->jsonBody['prio'] ?? 0);
+        $title = trim($request->getParsedBody()['title'] ?? '');
+        $note = str_replace("\r\n", "\n", $request->getParsedBody()['note'] ?? '');
+        $prio = (int)($request->getParsedBody()['prio'] ?? 0);
+
         if ($prio < -1) {
             $prio = -1;
         } elseif ($prio > 2) {
             $prio = 2;
         }
 
-        $duedate = MTTSmartSyntax::parseDuedate(trim($this->req->jsonBody['duedate'] ?? ''));
+        $duedate = MTTSmartSyntax::parseDuedate(trim($request->getParsedBody['duedate'] ?? ''));
 
         $t = array();
         $t['total'] = 0;
+
         if ($title == '') {
             return $t;
         }
-        $tags = $this->req->jsonBody['tags'] ?? '';
+
+        $tags = $request->getParsedBody()['tags'] ?? '';
 
         if (Config::get('autotag')) {
-            $tags .= ',' . ($this->req->jsonBody['tag'] ?? '');
+            $tags .= ',' . ($request->getParsedBody['tag'] ?? '');
         }
 
         $ow = 1 + (int)$db->sq("SELECT MAX(ow) FROM {$db->prefix}todolist WHERE list_id=$listId AND compl=0");
@@ -459,6 +522,7 @@ class TasksController extends ApiRequestResponse
         $db->ex("BEGIN");
         $db->dq("INSERT INTO {$db->prefix}todolist (uuid,list_id,title,d_created,d_edited,ow,prio,note,duedate) VALUES (?,?,?,?,?,?,?,?,?)", array(Security::generateUUID(), $listId, $title, $date, $date, $ow, $prio, $note, $duedate));
         $id = (int) $db->lastInsertId();
+
         if ($tags != '') {
             $aTags = $this->prepareTags($tags);
             if ($aTags) {
@@ -471,49 +535,58 @@ class TasksController extends ApiRequestResponse
         MTTNotificationCenter::postNotification(MTTNotification::DIDCREATETASK, $task);
         $t['list'][] = $task;
         $t['total'] = 1;
+
         return $t;
     }
 
-    private function editTask(int $id): ?array
+    private function editTask(ServerRequestInterface $request, int $id): ?array
     {
         $db = DBConnection::instance();
-        $title = trim($this->req->jsonBody['title'] ?? '');
-        $note = str_replace("\r\n", "\n", $this->req->jsonBody['note'] ?? '');
-        $prio = (int)($this->req->jsonBody['prio'] ?? 0);
+        $title = trim($request->getParsedBody()['title'] ?? '');
+        $note = str_replace("\r\n", "\n", $request->getParsedBody()['note'] ?? '');
+        $prio = (int)($request->getParsedBody()['prio'] ?? 0);
+
         if ($prio < -1) {
             $prio = -1;
         } elseif ($prio > 2) {
             $prio = 2;
         }
 
-        $duedate = MTTSmartSyntax::parseDuedate(trim($this->req->jsonBody['duedate'] ?? ''));
+        $duedate = MTTSmartSyntax::parseDuedate(trim($request->getParsedBody()['duedate'] ?? ''));
+
         $t = array();
         $t['total'] = 0;
+
         if ($title == '') {
             return $t;
         }
+
         $listId = (int) $db->sq("SELECT list_id FROM {$db->prefix}todolist WHERE id=$id");
-        $tags = trim($this->req->jsonBody['tags'] ?? '');
+        $tags = trim($request->getParsedBody()['tags'] ?? '');
         $db->ex("BEGIN");
         $db->ex("DELETE FROM {$db->prefix}tag2task WHERE task_id=$id");
         $aTags = $this->prepareTags($tags);
+
         if ($aTags) {
             $this->addTaskTags($id, $aTags['ids'], $listId);
         }
+
         $db->dq("UPDATE {$db->prefix}todolist SET title=?,note=?,prio=?,duedate=?,d_edited=? WHERE id=$id", array($title, $note, $prio, $duedate, time()));
         $db->ex("COMMIT");
         $task = $this->getTaskRowById($id);
         MTTNotificationCenter::postNotification(MTTNotification::DIDEDITTASK, ['task' => $task]);
         $t['list'][] = $task;
         $t['total'] = 1;
+
         return $t;
     }
 
-    private function moveTask(int $id): ?array
+    private function moveTask(ServerRequestInterface $request, int $id): ?array
     {
-        $fromId = (int)($this->req->jsonBody['from'] ?? 0);
-        $toId = (int)($this->req->jsonBody['to'] ?? 0);
+        $fromId = (int)($request->getParsedBody()['from'] ?? 0);
+        $toId = (int)($request->getParsedBody()['to'] ?? 0);
         $result = $this->doMoveTask($id, $toId);
+
         if ($result && MTTNotificationCenter::hasObserversForNotification(MTTNotification::DIDEDITTASK)) {
             $task = $this->getTaskRowById($id);
             MTTNotificationCenter::postNotification(MTTNotification::DIDEDITTASK, [
@@ -521,10 +594,13 @@ class TasksController extends ApiRequestResponse
                 'task' => $task
             ]);
         }
+
         $t = array('total' => $result ? 1 : 0);
+
         if ($fromId == -1 && $result) {
             $t['list'][] = $this->getTaskRowById($id);
         }
+
         return $t;
     }
 
@@ -534,6 +610,7 @@ class TasksController extends ApiRequestResponse
 
         // Check task exists and not in target list
         $r = $db->sqa("SELECT * FROM {$db->prefix}todolist WHERE id=?", array($id));
+
         if (!$r || $listId == $r['list_id']) {
             return false;
         }
@@ -549,13 +626,14 @@ class TasksController extends ApiRequestResponse
         $db->ex("UPDATE {$db->prefix}tag2task SET list_id=? WHERE task_id=?", array($listId, $id));
         $db->dq("UPDATE {$db->prefix}todolist SET list_id=?, ow=?, d_edited=? WHERE id=?", array($listId, $ow, time(), $id));
         $db->ex("COMMIT");
+
         return true;
     }
 
-    private function completeTask(int $id): ?array
+    private function completeTask(ServerRequestInterface $request, int $id): ?array
     {
         $db = DBConnection::instance();
-        $compl = (int)($this->req->jsonBody['compl'] ?? 0);
+        $compl = (int)($request->getParsedBody()['compl'] ?? 0);
         $listId = (int)$db->sq("SELECT list_id FROM {$db->prefix}todolist WHERE id=$id");
 
         if ($compl) {
@@ -563,6 +641,7 @@ class TasksController extends ApiRequestResponse
         } else {
             $ow = 1 + (int)$db->sq("SELECT MAX(ow) FROM {$db->prefix}todolist WHERE list_id=$listId AND compl=0");
         }
+
         $date = time();
         $dateCompleted = $compl ? $date : 0;
         $db->dq("UPDATE {$db->prefix}todolist SET compl=$compl,ow=$ow,d_completed=?,d_edited=? WHERE id=$id", array($dateCompleted, $date));
@@ -571,15 +650,17 @@ class TasksController extends ApiRequestResponse
         $t = array();
         $t['total'] = 1;
         $t['list'][] = $task;
+
         return $t;
     }
 
-    private function editNote(int $id): ?array
+    private function editNote(ServerRequestInterface $request, int $id): ?array
     {
         $db = DBConnection::instance();
-        $note = $this->req->jsonBody['note'] ?? '';
+        $note = $request->getParsedBody()['note'] ?? '';
         $note = str_replace("\r\n", "\n", $note);
         $db->dq("UPDATE {$db->prefix}todolist SET note=?,d_edited=? WHERE id=$id", array($note, time()));
+
         if (MTTNotificationCenter::hasObserversForNotification(MTTNotification::DIDEDITTASK)) {
             $task = $this->getTaskRowById($id);
             MTTNotificationCenter::postNotification(MTTNotification::DIDEDITTASK, [
@@ -587,16 +668,18 @@ class TasksController extends ApiRequestResponse
                 'task' => $task
             ]);
         }
+
         $t = array();
         $t['total'] = 1;
         $t['list'][] = array('id' => $id, 'note' => MTTMarkdown::noteMarkup($note), 'noteText' => (string)$note);
+
         return $t;
     }
 
-    private function priorityTask(int $id): ?array
+    private function priorityTask(ServerRequestInterface $request, int $id): ?array
     {
         $db = DBConnection::instance();
-        $prio = (int)($this->req->jsonBody['prio'] ?? 0);
+        $prio = (int)($request->getParsedBody()['prio'] ?? 0);
 
         if ($prio < -1) {
             $prio = -1;
@@ -605,6 +688,7 @@ class TasksController extends ApiRequestResponse
         }
 
         $db->ex("UPDATE {$db->prefix}todolist SET prio=$prio,d_edited=? WHERE id=$id", array(time()));
+
         if (MTTNotificationCenter::hasObserversForNotification(MTTNotification::DIDEDITTASK)) {
             $task = $this->getTaskRowById($id);
             MTTNotificationCenter::postNotification(MTTNotification::DIDEDITTASK, [
@@ -612,26 +696,32 @@ class TasksController extends ApiRequestResponse
                 'task' => $task
             ]);
         }
+
         $t = array();
         $t['total'] = 1;
         $t['list'][] = array('id' => $id, 'prio' => $prio);
+
         return $t;
     }
 
-    private function changeTaskOrder(): ?array
+    private function changeTaskOrder(ServerRequestInterface $request): ?array
     {
         $db = DBConnection::instance();
-        $order = $this->req->jsonBody['order'] ?? null;
+        $order = $request->getParsedBody()['order'] ?? null;
         $t = array();
         $t['total'] = 0;
+
         if (is_array($order)) {
             $ad = array();
+
             foreach ($order as $obj) {
                 $id = $obj['id'] ?? 0;
                 $diff = $obj4['diff'] ?? 0;
                 $ad[(int)$diff][] = (int)$id;
             }
+
             $db->ex("BEGIN");
+
             foreach ($ad as $diff => $ids) {
                 if ($diff >= 0) {
                     $set = "ow=ow+" . $diff;
@@ -641,9 +731,11 @@ class TasksController extends ApiRequestResponse
 
                 $db->dq("UPDATE {$db->prefix}todolist SET $set,d_edited=? WHERE id IN (" . implode(',', $ids) . ")", array(time()));
             }
+
             $db->ex("COMMIT");
             $t['total'] = 1;
         }
+
         return $t;
     }
 
@@ -651,9 +743,11 @@ class TasksController extends ApiRequestResponse
     {
         $id = (int)$id;
         $task = null;
+
         if (MTTNotificationCenter::hasObserversForNotification(MTTNotification::DIDDELETETASK)) {
             $task = $this->getTaskRowById($id);
         }
+
         $db = DBConnection::instance();
         $db->ex("BEGIN");
         $db->ex("DELETE FROM {$db->prefix}tag2task WHERE task_id=$id");
@@ -661,12 +755,15 @@ class TasksController extends ApiRequestResponse
         $db->dq("DELETE FROM {$db->prefix}todolist WHERE id=$id");
         $deleted = $db->affected();
         $db->ex("COMMIT");
+
         if ($deleted && MTTNotificationCenter::hasObserversForNotification(MTTNotification::DIDDELETETASK)) {
             MTTNotificationCenter::postNotification(MTTNotification::DIDDELETETASK, $task);
         }
+
         $t = array();
         $t['total'] = $deleted;
         $t['list'][] = array('id' => $id);
+
         return $t;
     }
 
@@ -674,23 +771,29 @@ class TasksController extends ApiRequestResponse
     {
         $db = DBConnection::instance();
         $sqlWhere = '';
+
         if ($readOnly) {
             $sqlWhere = "WHERE published=1";
         }
+
         $a = array();
         $q = $db->dq("SELECT id,name FROM {$db->prefix}lists $sqlWhere ORDER BY id ASC");
+
         while ($r = $q-> fetchRow()) {
             $a[ (string)$r[0] ] = (string)$r[1];
         }
+
         return $a;
     }
 
     private function getTaskRowById(int $id): ?array
     {
         $r = DBCore::default()->getTaskById($id);
+
         if (!$r) {
             throw new Exception("Failed to fetch task data");
         }
+
         return $this->prepareTaskRow($r);
     }
 
@@ -702,6 +805,7 @@ class TasksController extends ApiRequestResponse
         $isEdited = ($r['d_edited'] != $r['d_created']);
         $dEdited = $isEdited ? Formatter::timestampToDatetime($r['d_edited']) : '';
         $dCompleted = $r['d_completed'] ? Formatter::timestampToDatetime($r['d_completed']) : '';
+
         if (!Config::get('showtime')) {
             $dCreatedFull = Formatter::timestampToDatetime($r['d_created'], true);
             $dEditedFull = $isEdited ? Formatter::timestampToDatetime($r['d_edited'], true) : '';
@@ -750,9 +854,11 @@ class TasksController extends ApiRequestResponse
         $lang = Lang::instance();
 
         $a = array('class' => '', 'str' => '', 'formatted' => '', 'formattedlong' => '', 'timestamp' => 0);
+
         if ($duedate == '') {
             return $a;
         }
+
         $ad = explode('-', $duedate);
         $y = (int)$ad[0];
         $m = (int)$ad[1];
@@ -762,11 +868,14 @@ class TasksController extends ApiRequestResponse
         $oToday = new DateTimeImmutable(date("Y-m-d"));
         $oDue = new DateTimeImmutable($duedate);
         $oDiff = $oToday->diff($oDue);
+
         if ($oDiff === false) {
             return $a;
         }
+
         $thisYear = ((int)$oToday->format('Y') == $y);
         $days = $oDiff->days;
+
         if ($oDiff->invert) {
             $days *= -1;
         }
@@ -780,11 +889,11 @@ class TasksController extends ApiRequestResponse
             $a['class'] = 'past';
             $a['str'] = Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days < -1) {
-             $a['class'] = 'past';
-             $a['str'] = !$exact ? sprintf($lang->get('daysago'), abs($days)) : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+            $a['class'] = 'past';
+            $a['str'] = !$exact ? sprintf($lang->get('daysago'), abs($days)) : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days == -1) {
-             $a['class'] = 'past';
-             $a['str'] = !$exact ? $lang->get('yesterday') : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
+            $a['class'] = 'past';
+            $a['str'] = !$exact ? $lang->get('yesterday') : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
         } elseif ($days == 0) {
             $a['class'] = 'today';
             $a['str'] = !$exact ? $lang->get('today') : Formatter::formatDate3(Config::get('dateformatshort'), $y, $m, $d, $lang);
@@ -815,6 +924,7 @@ class TasksController extends ApiRequestResponse
         if (!$d) {
             return 33330000;
         }
+
         $ad = explode('-', $d);
         $s = $ad[0];
 
@@ -829,6 +939,7 @@ class TasksController extends ApiRequestResponse
         } else {
             $s .= $ad[2];
         }
+
         return (int)$s;
     }
 
@@ -836,6 +947,7 @@ class TasksController extends ApiRequestResponse
     {
         $db = DBConnection::instance();
         $id = $db->sq("SELECT id FROM {$db->prefix}tags WHERE name=?", array($tag));
+
         return $id ? $id : 0;
     }
 
@@ -843,11 +955,13 @@ class TasksController extends ApiRequestResponse
     {
         $db = DBConnection::instance();
         $tagId = $db->sq("SELECT id FROM {$db->prefix}tags WHERE name=?", array($name));
+
         if ($tagId) {
             return array('id' => $tagId, 'name' => $name);
         }
 
         $db->ex("INSERT INTO {$db->prefix}tags (name) VALUES (?)", array($name));
+
         return array(
             'id' => $db->lastInsertId(),
             'name' => $name
@@ -857,11 +971,13 @@ class TasksController extends ApiRequestResponse
     private function prepareTags(string $tagsStr): ?array
     {
         $tags = explode(',', $tagsStr);
+
         if (!$tags) {
             return null;
         }
 
         $aTags = array('tags' => array(), 'ids' => array());
+
         foreach ($tags as $tag) {
             $tag = str_replace(array('^', '#'), '', trim($tag));
 
@@ -875,12 +991,14 @@ class TasksController extends ApiRequestResponse
                 $aTags['ids'][] = $aTag['id'];
             }
         }
+
         return $aTags;
     }
 
     private function addTaskTags(int $taskId, array $tagIds, int $listId)
     {
         $db = DBConnection::instance();
+
         if (!$tagIds) {
             return;
         }
