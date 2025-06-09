@@ -149,6 +149,7 @@ $container->add(TasksController::class)->addArgument($log);
 $container->add(TagsController::class)->addArgument($log);
 $container->add(AuthController::class)->addArgument($log);
 $container->add(ExtSettingsController::class)->addArgument($log);
+$container->add(HelloController::class)->addArgument($log);
 
 /* ===================================================================================================================== */
 
@@ -171,6 +172,7 @@ $log->info('Added Strategy to Router for Dependency Injection');
 
 // map a route
 $router->map('GET', '/mytinytodo/', [HomeController::class, 'index']);
+$router->map('GET', '/mytinytodo', [HomeController::class, 'redirect']);
 
 $router->map('POST', '/mytinytodo/api/tasks/parseTitle', [TasksController::class, 'postTitleParse']);
 
@@ -210,6 +212,9 @@ $router->map('POST', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettin
 
 $router->map('GET', '/mytinytodo/setup', [HomeController::class, 'setup']);
 $router->map('POST', '/mytinytodo/setup', [HomeController::class, 'setup']);
+$router->map('GET', '/mytinytodo/export', [HomeController::class, 'export']);
+$router->map('GET', '/mytinytodo/feed', [HomeController::class, 'feed']);
+
 $router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
 
 try {

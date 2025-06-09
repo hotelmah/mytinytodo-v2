@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /*
     This file is a part of myTinyTodo.
@@ -6,8 +8,10 @@
     Licensed under the GNU GPL version 2 or any later. See file COPYRIGHT for details.
 */
 
-require_once(MTTINC. 'vendor/autoload.php');
+namespace App\Archives;
 
+use App\Core\MTTMarkdownInterface;
+use App\Utility\Info;
 use League\CommonMark\MarkdownConverter;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
@@ -22,7 +26,7 @@ class MTTCommonmarkWrapper implements MTTMarkdownInterface
     /** @var MarkdownConverter */
     protected $converter;
 
-    function __construct()
+    public function __construct()
     {
         $this->toExternal = false;
 
@@ -37,7 +41,7 @@ class MTTCommonmarkWrapper implements MTTMarkdownInterface
                         if (!($mention instanceof Mention)) {
                             return null;
                         }
-                        $mention->setUrl(\sprintf(get_mttinfo('url'). "?task=%d", $mention->getIdentifier()));
+                        $mention->setUrl(\sprintf(Info::getMttinfo('url') . "?task=%d", $mention->getIdentifier()));
                         if (!$this->toExternal) {
                             $mention->data->append('attributes/class', 'mtt-link-to-task');
                             $mention->data->append('attributes/data-target-id', $mention->getIdentifier());
@@ -47,9 +51,11 @@ class MTTCommonmarkWrapper implements MTTMarkdownInterface
                 ]
             ],
         ]);
+
         $environment->addExtension(new CommonMarkCoreExtension());
         $environment->addExtension(new GithubFlavoredMarkdownExtension());
         $environment->addExtension(new MentionExtension());
+
         $this->converter = new MarkdownConverter($environment);
     }
 

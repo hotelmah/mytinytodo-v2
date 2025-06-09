@@ -1034,14 +1034,14 @@ var mytinytodo = window.mytinytodo = _mtt = {
         var l = list || curList;
         if (l === undefined) return '';
         if (!format.match(/^[a-z0-9-]+$/i)) return '';
-        return this.mttUrl + 'export.php?list='+l.id +'&format='+format;
+        return this.mttUrl + 'export?list='+l.id +'&format='+format;
     },
 
     urlForFeed: function(list)
     {
         list = list || curList;
         if (list === undefined) return '';
-        return _mtt.mttUrl + 'feed.php?list=' + list.id;
+        return _mtt.mttUrl + 'feed?list=' + list.id;
     },
 
     urlForSettings: function(json = 0)

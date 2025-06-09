@@ -317,7 +317,6 @@ function js_options()
             </div>
         </div>
 
-
         <div id="listmenucontainer" class="mtt-menu-container" style="display:none">
             <ul>
                 <li class="mtt-need-list mtt-need-real-list" id="btnRenameList"><?php Formatter::_e('list_rename'); ?></li>

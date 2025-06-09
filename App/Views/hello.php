@@ -18,7 +18,7 @@
         ~ Hello Worlds!! ~
     </p>
     <p>
-        My Tiny Todo
+        My Tiny Todo <?= $name ?>
     </p>
 </body>
 </html>
