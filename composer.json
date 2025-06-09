@@ -9,7 +9,7 @@
         }
     },
     "require": {
-        "php": ">=7.0.0",
+        "php": ">=8.0.0",
         "symfony/polyfill-intl-normalizer": "1.28",
         "erusev/parsedown": "1.7.4",
         "monolog/monolog": "^3.9",

@@ -64,7 +64,9 @@ if (getenv('MTT_ENABLE_DEBUG') == 'YES' || (defined('MTT_DEBUG') && MTT_DEBUG)) 
 
 /* ===================================================================================================================== */
 
-Config::dbInitialize();
+if ($_SERVER['REQUEST_URI'] != '/mytinytodo/setup') {
+    Config::dbInitialize();
+}
 
 /* ===================================================================================================================== */
 
@@ -206,6 +208,8 @@ $router->map('GET', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSetting
 $router->map('PUT', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
 $router->map('POST', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
 
+$router->map('GET', '/mytinytodo/setup', [HomeController::class, 'setup']);
+$router->map('POST', '/mytinytodo/setup', [HomeController::class, 'setup']);
 $router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
 
 try {

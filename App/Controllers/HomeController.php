@@ -23,4 +23,12 @@ class HomeController extends BaseController
         $responseBody = $psr17Factory->createStream(self::getView('settings', []));
         return $psr17Factory->createResponse(200)->withBody($responseBody);
     }
+
+    public function setup(ServerRequestInterface $request): ResponseInterface
+    {
+        $psr17Factory = new Psr17Factory();
+
+        $psr17Factory->createStream(self::getView('setup', []));
+        return $psr17Factory->createResponse(302)->withHeader('location', '/mytinytodo/setup')->withHeader('Content-type', 'text/html; charset=utf-8');
+    }
 }
