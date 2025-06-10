@@ -21,6 +21,10 @@ These two files are installed when the setup runs.
 - mytinytodo.db
 - App\Config\config.database.php
 
+## Features Not Tested
+
+The MySQLi and PostGres database classes were not tested. Only SQLite3. Use SQLite3 as your database for the installation.
+
 ## RSS Feed
 
 The RS Feed feature may not be working properly.
