@@ -502,7 +502,7 @@ class TasksController extends BaseControllerApi
             $prio = 2;
         }
 
-        $duedate = MTTSmartSyntax::parseDuedate(trim($request->getParsedBody['duedate'] ?? ''));
+        $duedate = MTTSmartSyntax::parseDuedate(trim($request->getParsedBody()['duedate'] ?? ''));
 
         $t = array();
         $t['total'] = 0;
@@ -514,7 +514,7 @@ class TasksController extends BaseControllerApi
         $tags = $request->getParsedBody()['tags'] ?? '';
 
         if (Config::get('autotag')) {
-            $tags .= ',' . ($request->getParsedBody['tag'] ?? '');
+            $tags .= ',' . ($request->getParsedBody()['tag'] ?? '');
         }
 
         $ow = 1 + (int)$db->sq("SELECT MAX(ow) FROM {$db->prefix}todolist WHERE list_id=$listId AND compl=0");
