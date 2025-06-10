@@ -10,6 +10,7 @@ namespace App\Config;
 
 use App\Utility\Security;
 use App\Utility\Response;
+use App\Utility\Http;
 use App\Database\DBConnection;
 use App\Database\DBCore;
 use App\Database\DatabaseSqlite3;
@@ -441,7 +442,7 @@ class Config
         if (!Config::$noDatabase && isset($checkDbExists) && $checkDbExists) {
             $exists = $db->tableExists($db->prefix . 'settings');
             if (!$exists) {
-                die("Need to create or update the database. Run <a href=/mytinytodo/setup>Setup</a> first.");
+                die("Need to create or update the database. Run <a href=" . Http::getURIPrefix() .  "/setup>Setup</a> first.");
             }
         }
     }
