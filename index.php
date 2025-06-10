@@ -74,6 +74,14 @@ date_default_timezone_set(Config::get('timezone'));
 
 /* ===================================================================================================================== */
 
+if (strpos($_SERVER['SERVER_SOFTWARE'], 'IIS') !== false) {
+    $URIPrefix = '/mytinytodo';
+} else {
+    $URIPrefix = '';
+}
+
+/* ===================================================================================================================== */
+
 //User can override language setting by cookies or query
 $forceLang = '';
 
@@ -129,7 +137,7 @@ $_mttinfo = array();
 // create a log channel
 $log = new Logger('Index');
 $log->pushHandler(new StreamHandler('Logs/MyTinyTodo-' . date('Y-m-d') . '.log', Level::Debug));
-$log->pushHandler(new NullHandler());
+// $log->pushHandler(new NullHandler());
 
 $log->pushProcessor(function ($record) {
     $record->extra['REQ_METHOD'] = $_SERVER['REQUEST_METHOD'];
@@ -171,51 +179,51 @@ $router->setStrategy($strategy);
 $log->info('Added Strategy to Router for Dependency Injection');
 
 // map a route
-$router->map('GET', '/mytinytodo/', [HomeController::class, 'index']);
+$router->map('GET', $URIPrefix . '/', [HomeController::class, 'index']);
 $router->map('GET', '/mytinytodo', [HomeController::class, 'redirect']);
 
-$router->map('POST', '/mytinytodo/api/tasks/parseTitle', [TasksController::class, 'postTitleParse']);
+$router->map('POST', $URIPrefix . '/api/tasks/parseTitle', [TasksController::class, 'postTitleParse']);
 
-$router->map('POST', '/mytinytodo/api/tasks/newCounter', [TasksController::class, 'postNewCounter']);
+$router->map('POST', $URIPrefix . '/api/tasks/newCounter', [TasksController::class, 'postNewCounter']);
 
-$router->map('GET', '/mytinytodo/api/suggestTags', [TagsController::class, 'getSuggestions']);
+$router->map('GET', $URIPrefix . '/api/suggestTags', [TagsController::class, 'getSuggestions']);
 
-$router->map('GET', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'getId']);
-$router->map('PUT', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'putId']);
-$router->map('DELETE', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'deleteId']);
-$router->map('POST', '/mytinytodo/api/lists/{id:-?\d+}', [ListsController::class, 'putId']);
+$router->map('GET', $URIPrefix . '/api/lists/{id:-?\d+}', [ListsController::class, 'getId']);
+$router->map('PUT', $URIPrefix . '/api/lists/{id:-?\d+}', [ListsController::class, 'putId']);
+$router->map('DELETE', $URIPrefix . '/api/lists/{id:-?\d+}', [ListsController::class, 'deleteId']);
+$router->map('POST', $URIPrefix . '/api/lists/{id:-?\d+}', [ListsController::class, 'putId']);
 
-$router->map('GET', '/mytinytodo/api/lists', [ListsController::class, 'get']);
-$router->map('POST', '/mytinytodo/api/lists', [ListsController::class, 'post']);
-$router->map('PUT', '/mytinytodo/api/lists', [ListsController::class, 'put']);
+$router->map('GET', $URIPrefix . '/api/lists', [ListsController::class, 'get']);
+$router->map('POST', $URIPrefix . '/api/lists', [ListsController::class, 'post']);
+$router->map('PUT', $URIPrefix . '/api/lists', [ListsController::class, 'put']);
 
-$router->map('PUT', '/mytinytodo/api/tasks/{id:-?\d+}', [TasksController::class, 'putId']);
-$router->map('DELETE', '/mytinytodo/api/tasks/{id:-?\d+}', [TasksController::class, 'deleteId']);
-$router->map('POST', '/mytinytodo/api/tasks/{id:-?\d+}', [TasksController::class, 'putId']);
+$router->map('PUT', $URIPrefix . '/api/tasks/{id:-?\d+}', [TasksController::class, 'putId']);
+$router->map('DELETE', $URIPrefix . '/api/tasks/{id:-?\d+}', [TasksController::class, 'deleteId']);
+$router->map('POST', $URIPrefix . '/api/tasks/{id:-?\d+}', [TasksController::class, 'putId']);
 
-$router->map('GET', '/mytinytodo/api/tasks', [TasksController::class, 'get']);
-$router->map('POST', '/mytinytodo/api/tasks', [TasksController::class, 'post']);
-$router->map('PUT', '/mytinytodo/api/tasks', [TasksController::class, 'put']);
+$router->map('GET', $URIPrefix . '/api/tasks', [TasksController::class, 'get']);
+$router->map('POST', $URIPrefix . '/api/tasks', [TasksController::class, 'post']);
+$router->map('PUT', $URIPrefix . '/api/tasks', [TasksController::class, 'put']);
 
-$router->map('GET', '/mytinytodo/api/tagCloud/{id:-?\d+}', [TagsController::class, 'getCloud']);
+$router->map('GET', $URIPrefix . '/api/tagCloud/{id:-?\d+}', [TagsController::class, 'getCloud']);
 
-$router->map('GET', '/mytinytodo/settings', [HomeController::class, 'settings']);
-$router->map('POST', '/mytinytodo/settings', [HomeController::class, 'settings']);
+$router->map('GET', $URIPrefix . '/settings', [HomeController::class, 'settings']);
+$router->map('POST', $URIPrefix . '/settings', [HomeController::class, 'settings']);
 
 $router->addPatternMatcher('adminoptions', '(login|logout|session)');
-$router->map('POST', '/mytinytodo/api/{adminoptions}', [AuthController::class, 'postAction']);
+$router->map('POST', $URIPrefix . '/api/{adminoptions}', [AuthController::class, 'postAction']);
 
 $router->addPatternMatcher('extsettingsopt', '(.+)');
-$router->map('GET', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'get']);
-$router->map('PUT', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
-$router->map('POST', '/mytinytodo/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
+$router->map('GET', $URIPrefix . '/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'get']);
+$router->map('PUT', $URIPrefix . '/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
+$router->map('POST', $URIPrefix . '/api/ext-settings/{extsettingsopt}', [ExtSettingsController::class, 'put']);
 
-$router->map('GET', '/mytinytodo/setup', [HomeController::class, 'setup']);
-$router->map('POST', '/mytinytodo/setup', [HomeController::class, 'setup']);
-$router->map('GET', '/mytinytodo/export', [HomeController::class, 'export']);
-$router->map('GET', '/mytinytodo/feed', [HomeController::class, 'feed']);
+$router->map('GET', $URIPrefix . '/setup', [HomeController::class, 'setup']);
+$router->map('POST', $URIPrefix . '/setup', [HomeController::class, 'setup']);
+$router->map('GET', $URIPrefix . '/export', [HomeController::class, 'export']);
+$router->map('GET', $URIPrefix . '/feed', [HomeController::class, 'feed']);
 
-$router->map('GET', '/mytinytodo/hello', [HelloController::class, 'index']);
+$router->map('GET', $URIPrefix . '/hello', [HelloController::class, 'index']);
 
 try {
     $psrResponse = $router->dispatch($psrRequest);
