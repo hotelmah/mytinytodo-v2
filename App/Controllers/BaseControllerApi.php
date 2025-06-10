@@ -15,8 +15,8 @@ abstract class BaseControllerApi
     {
         $this->log = $logger;
 
-        if (Authentication::accessToken() == '') {
-            Authentication::updateToken();
-        }
+        // if (Authentication::accessToken() == '') {
+        //     Authentication::updateToken();
+        // }
     }
 }
