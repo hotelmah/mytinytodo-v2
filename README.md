@@ -14,6 +14,13 @@ This is a very nice Web Application.
 
 Since this is an application and not a library or dependency, the best way to install is to clone this repository to a public_http folder and run composer install. Then navigate to index, and the setup should run.
 
+## Files Not Included in Repository
+
+These two files are installed when the setup runs.
+
+- mytinytodo.db
+- App\Config\config.database.php
+
 ## RSS Feed
 
 The RS Feed feature may not be working properly.
