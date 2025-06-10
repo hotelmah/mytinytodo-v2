@@ -28,4 +28,25 @@ class Http
         header('Expires: Wed, 29 Apr 2009 10:00:00 GMT');
         header('Pragma: no-cache'); // for old HTTP/1.0 intermediate caches
     }
+
+    public static function getURIPrefix(): string
+    {
+        // Prefer environment variable, fallback to server software detection
+        $env = getenv('MTT_ENV');
+
+        if ($env === 'development') {
+            return '/mytinytodo';
+        }
+
+        if ($env === 'production') {
+            return '';
+        }
+
+        // Fallback for legacy detection
+        if (isset($_SERVER['SERVER_SOFTWARE']) && strpos($_SERVER['SERVER_SOFTWARE'], 'IIS') !== false) {
+            return '/mytinytodo';
+        }
+
+        return '';
+    }
 }

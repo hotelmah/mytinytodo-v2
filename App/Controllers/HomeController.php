@@ -19,7 +19,7 @@ class HomeController extends BaseController
     public function redirect(ServerRequestInterface $request): ResponseInterface
     {
         $psr17Factory = new Psr17Factory();
-        return $psr17Factory->createResponse(301)->withHeader('location', '/mytinytodo/')->withHeader('Content-type', 'text/html; charset=utf-8');
+        return $psr17Factory->createResponse(301)->withHeader('location', $this->URIPrefix . '/')->withHeader('Content-type', 'text/html; charset=utf-8');
     }
 
     public function settings(ServerRequestInterface $request): ResponseInterface
@@ -35,7 +35,7 @@ class HomeController extends BaseController
         $psr17Factory = new Psr17Factory();
 
         $psr17Factory->createStream(self::getView('setup', []));
-        return $psr17Factory->createResponse(302)->withHeader('location', '/mytinytodo/setup')->withHeader('Content-type', 'text/html; charset=utf-8');
+        return $psr17Factory->createResponse(302)->withHeader('location', $this->URIPrefix . '/setup')->withHeader('Content-type', 'text/html; charset=utf-8');
     }
 
     public function export(ServerRequestInterface $request): ResponseInterface

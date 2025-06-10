@@ -64,11 +64,7 @@ if (getenv('MTT_ENABLE_DEBUG') == 'YES' || (defined('MTT_DEBUG') && MTT_DEBUG)) 
 
 /* ===================================================================================================================== */
 
-if (strpos($_SERVER['SERVER_SOFTWARE'], 'IIS') !== false) {
-    $URIPrefix = '/mytinytodo';
-} else {
-    $URIPrefix = '';
-}
+$URIPrefix = Http::getURIPrefix();
 
 /* ===================================================================================================================== */
 
