@@ -10,6 +10,10 @@ The server code uses League\Router and League\Container dependencies. There is a
 
 This is a very nice Web Application.
 
+## Installation
+
+Since this is an application and not a library or dependency, the best way to install is to clone this repository to a public_http folder and run composer install. Then navigate to index, and the setup should run.
+
 ## RSS Feed
 
 The RS Feed feature may not be working properly.
