@@ -1,3 +1,4 @@
+/* stylelint-disable no-descending-specificity */
 /*
   This file is a part of myTinyTodo.
 */
@@ -340,6 +341,9 @@ a {
 
 .form-input {
     padding: 3px;
+
+    color: var(--color-text-reduced);
+
     border: 1px solid var(--color-border-default);
     background-color: var(--color-input-bg);
     border-radius: 2px;
@@ -347,9 +351,9 @@ a {
 }
 
 select.form-input {
-    appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    appearance: none;
     background: var(--color-input-bg) var(--svg-select) no-repeat top 4px right 5px;
     background-size: 1rem 1rem;
     padding-right: calc(1rem + 10px);
@@ -548,8 +552,8 @@ select.form-input {
 .mtt-tab .mtt-img-button > span {
     width: 8px;
     height: 8px;
-    mask: url(../images/arrdown2.svg) no-repeat;
     -webkit-mask: url(../images/arrdown2.svg) no-repeat;
+    mask: url(../images/arrdown2.svg) no-repeat;
     background-color: var(--color-btn-tab);
     transition: background-color 0.1s ease-in;
     /* animate together with button background */
@@ -624,8 +628,8 @@ select.form-input {
     display: block;
     width: 16px;
     height: 16px;
-    mask: url(../images/plus.svg) no-repeat;
     -webkit-mask: url(../images/plus.svg) no-repeat;
+    mask: url(../images/plus.svg) no-repeat;
     background-color: var(--color-tab-text);
 }
 
@@ -639,8 +643,8 @@ select.form-input {
 }
 
 .mtt-tabs-select-button > span {
-    mask: url(../images/selectlist2.svg) no-repeat;
     -webkit-mask: url(../images/selectlist2.svg) no-repeat;
+    mask: url(../images/selectlist2.svg) no-repeat;
     background-color: var(--color-tab-text);
 }
 
@@ -690,8 +694,8 @@ select.form-input {
     display: inline-block;
     height: 9px;
     width: 9px;
-    mask: url(../images/arrdown2.svg) no-repeat;
     -webkit-mask: url(../images/arrdown2.svg) no-repeat;
+    mask: url(../images/arrdown2.svg) no-repeat;
     background-color: var(--color-btn-default);
 }
 
@@ -746,8 +750,8 @@ select.form-input {
     right: 2px;
     margin-top: -8px;
     cursor: pointer;
-    mask: url(../images/add.svg) no-repeat;
     -webkit-mask: url(../images/add.svg) no-repeat;
+    mask: url(../images/add.svg) no-repeat;
     background-color: var(--color-btn-reduced);
     transition: background-color 0.1s ease-in;
 }
@@ -761,8 +765,8 @@ select.form-input {
 }
 
 #newtask_adv span {
-    mask: url(../images/newtask-ext.svg) no-repeat;
     -webkit-mask: url(../images/newtask-ext.svg) no-repeat;
+    mask: url(../images/newtask-ext.svg) no-repeat;
     background-color: var(--color-btn-reduced);
 }
 
@@ -799,16 +803,16 @@ select.form-input {
 
 .mtt-searchbox-icon.mtt-icon-search {
     left: 4px;
-    mask: url(../images/search.svg) no-repeat;
     -webkit-mask: url(../images/search.svg) no-repeat;
+    mask: url(../images/search.svg) no-repeat;
     background-color: var(--color-btn-reduced);
 }
 
 .mtt-searchbox-icon.mtt-icon-cancelsearch {
     right: 4px;
     cursor: pointer;
-    mask: url(../images/search-cancel.svg) no-repeat;
     -webkit-mask: url(../images/search-cancel.svg) no-repeat;
+    mask: url(../images/search-cancel.svg) no-repeat;
     background-color: var(--color-btn-reduced);
     transition: background-color 0.1s ease-in;
 }
@@ -828,7 +832,7 @@ select.form-input {
     font-weight: bold;
 }
 
-/* */
+/* ? */
 #page_tasks h3 {
     display: flex;
     align-items: baseline;
@@ -904,8 +908,8 @@ select.form-input {
     width: 1em;
     height: 1em;
     /* em! */
-    mask: var(--svg-closetag) no-repeat;
     -webkit-mask: var(--svg-closetag) no-repeat;
+    mask: var(--svg-closetag) no-repeat;
     background-color: var(--color-btn-reduced);
     transition: background-color 0.1s ease-in;
 }
@@ -915,8 +919,8 @@ select.form-input {
 }
 
 #mtt-tag-toolbar-close span {
-    mask: var(--svg-closetag) no-repeat;
     -webkit-mask: var(--svg-closetag) no-repeat;
+    mask: var(--svg-closetag) no-repeat;
     background-color: var(--color-btn-reduced);
 }
 
@@ -932,8 +936,8 @@ h3.page-title a.mtt-back-button {
     padding-right: 0.4rem;
     position: relative;
     top: 4px;
-    mask: url(../images/back.svg) no-repeat;
     -webkit-mask: url(../images/back.svg) no-repeat;
+    mask: url(../images/back.svg) no-repeat;
     background-color: var(--color-btn-default);
 }
 
@@ -946,8 +950,8 @@ h3.page-title a.mtt-back-button {
     height: 1rem;
     display: inline-block;
     margin-right: 4px;
-    mask: var(--svg-note-toggle) no-repeat;
     -webkit-mask: var(--svg-note-toggle) no-repeat;
+    mask: var(--svg-note-toggle) no-repeat;
     background-color: var(--color-btn-reduced);
     transition:
         transform 0.1s linear,
@@ -1057,9 +1061,9 @@ li.task-row.task-expanded .task-toggle {
     display: none;
 }
 
-.task-id {
+/* .task-id { */
     /*display: none;*/
-}
+/* } */
 
 #mtt.show-date .task-date {
     display: block;
@@ -1178,8 +1182,8 @@ li.task-row.task-completed .duedate {
     width: 1rem;
     visibility: hidden;
     /* allocate space */
-    mask: url(../images/task-menu2.svg) no-repeat;
     -webkit-mask: url(../images/task-menu2.svg) no-repeat;
+    mask: url(../images/task-menu2.svg) no-repeat;
     background-color: var(--color-btn-reduced);
     transition: background-color 0.1s ease-in;
 }
@@ -1296,7 +1300,7 @@ li.task-row.task-completed .task-note-block .task-note {
     display: none;
 }
 
-/* */
+/* ? */
 
 #tasks_info {
     display: flex;
@@ -1338,10 +1342,6 @@ li.task-row.task-completed .task-note-block .task-note {
 
 .form-row div.h {
     margin-bottom: 3px;
-}
-
-.form-input {
-    color: var(--color-text-reduced);
 }
 
 .form-input.in100 {
@@ -1582,8 +1582,8 @@ textarea.form-input.inmax {
 }
 
 #tagcloudcancel span {
-    mask: var(--svg-closetag) no-repeat;
     -webkit-mask: var(--svg-closetag) no-repeat;
+    mask: var(--svg-closetag) no-repeat;
     background-color: var(--color-btn-reduced);
 }
 
@@ -1728,8 +1728,8 @@ textarea.form-input.inmax {
     top: 50%;
     margin-top: -8px;
     left: 50%;
-    mask: url(../images/arr-left.svg) no-repeat;
     -webkit-mask: url(../images/arr-left.svg) no-repeat;
+    mask: url(../images/arr-left.svg) no-repeat;
     background-color: var(--color-btn-default);
 }
 
@@ -1739,15 +1739,15 @@ textarea.form-input.inmax {
     top: 50%;
     margin-top: -8px;
     right: 50%;
-    mask: var(--svg-arr-right) no-repeat;
     -webkit-mask: var(--svg-arr-right) no-repeat;
+    mask: var(--svg-arr-right) no-repeat;
     background-color: var(--color-btn-default);
 }
 
 .ui-datepicker select {
-    appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    appearance: none;
     background: transparent var(--svg-select) no-repeat top 2px right 4px;
     background-size: 1rem 1rem;
     padding: 1px 3px;
@@ -1765,6 +1765,7 @@ textarea.form-input.inmax {
 }
 
 .mtt-menu-button {
+    -webkit-user-select: none;
     user-select: none;
     cursor: pointer;
     padding: 4px;
@@ -1788,6 +1789,7 @@ textarea.form-input.inmax {
     padding: 2px 0px;
     box-shadow: var(--color-popup-shadow);
     border-radius: 5px;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -1867,8 +1869,8 @@ textarea.form-input.inmax {
 }
 
 li.mtt-item-checked .menu-icon {
-    mask: var(--svg-checkmark) no-repeat;
     -webkit-mask: var(--svg-checkmark) no-repeat;
+    mask: var(--svg-checkmark) no-repeat;
     background-color: var(--color-btn-default);
 }
 
@@ -1879,8 +1881,8 @@ li.mtt-menu-indicator .submenu-icon {
     margin-top: -8px;
     width: 16px;
     height: 16px;
-    mask: var(--svg-arr-right) no-repeat;
     -webkit-mask: var(--svg-arr-right) no-repeat;
+    mask: var(--svg-arr-right) no-repeat;
     background-color: var(--color-btn-default);
 }
 
@@ -1904,7 +1906,7 @@ li.mtt-item-hidden {
     display: none;
 }
 
-/**/
+/* ? */
 
 #btnRssFeed .menu-icon {
     background: var(--svg-rss) no-repeat;
@@ -2044,9 +2046,9 @@ pre {
 }
 
 .mtt-settings-table select {
-    appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    appearance: none;
     background: var(--color-input-bg) var(--svg-select) no-repeat top 4px right 5px;
     background-size: 1rem 1rem;
     padding-right: calc(1rem + 10px);
@@ -2136,6 +2138,8 @@ only screen and (max-height: 600px) {
     html {
         font-size: 16px;
         -webkit-text-size-adjust: 100%;
+        -moz-text-size-adjust: 100%;
+        text-size-adjust: 100%;
         /* Dont increase font-size in horizontal orientation on ios */
     }
 
@@ -2265,8 +2269,8 @@ only screen and (max-height: 600px) {
 
     .taskactionbtn {
         padding: 2px 0.5rem;
-        mask-origin: content-box;
         -webkit-mask-origin: content-box;
+        mask-origin: content-box;
         visibility: visible;
     }
 

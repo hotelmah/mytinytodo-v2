@@ -90,10 +90,9 @@
     /* Settings */
     --color-settings-row: #222;
 
-    /* */
+    /* ? */
     --color-placeholder: #444;
     --color-placeholder-border: #555;
 
     --svg-select: var(--svg-select-dark);
-
 }
