@@ -29,24 +29,22 @@ class Http
         header('Pragma: no-cache'); // for old HTTP/1.0 intermediate caches
     }
 
-    public static function getURIPrefix(): string
+    public static function getEnvironmentValue(string $key, $default = null): ?string
     {
-        // Prefer environment variable, fallback to server software detection
-        $env = getenv('MTT_ENV');
-
-        if ($env === 'development') {
-            return '/mytinytodo';
+        // Try getenv() first
+        $value = getenv($key);
+        if ($value !== false) {
+            return $value;
         }
 
-        if ($env === 'production') {
-            return '';
+        // Fallback to $_ENV
+        if (isset($_ENV[$key])) {
+            return $_ENV[$key];
         }
 
-        // Fallback for legacy detection
-        if (isset($_SERVER['SERVER_SOFTWARE']) && strpos($_SERVER['SERVER_SOFTWARE'], 'IIS') !== false) {
-            return '/mytinytodo';
-        }
+        // Removed fallback to $_SERVER to ensure reliable environment variable handling
 
-        return '';
+        // Return default if not found
+        return $default;
     }
 }

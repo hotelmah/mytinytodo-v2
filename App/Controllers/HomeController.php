@@ -5,15 +5,21 @@ namespace App\Controllers;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
-use App\Utility\Http;
 
 class HomeController extends BaseController
 {
+    private string $URIPrefix;
+
+    public function __construct(string $URIPrefix)
+    {
+        $this->URIPrefix = $URIPrefix;
+    }
+
     public function index(ServerRequestInterface $request): ResponseInterface
     {
         $psr17Factory = new Psr17Factory();
 
-        $responseBody = $psr17Factory->createStream(self::getView('default', ['URIPrefix' => Http::getURIPrefix()]));
+        $responseBody = $psr17Factory->createStream(self::getView('default', ['URIPrefix' => $this->URIPrefix]));
         return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'text/html; charset=utf-8');
     }
 

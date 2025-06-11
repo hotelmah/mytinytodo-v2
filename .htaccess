@@ -16,4 +16,4 @@
 #    rewrite ^/api/(.*) /api.php/$1 last;
 # }
 
-SetEnv MTT_ENV production
+SetEnv URI_PREFIX

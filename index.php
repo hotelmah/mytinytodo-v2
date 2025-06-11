@@ -64,7 +64,7 @@ if (getenv('MTT_ENABLE_DEBUG') == 'YES' || (defined('MTT_DEBUG') && MTT_DEBUG)) 
 
 /* ===================================================================================================================== */
 
-$URIPrefix = Http::getURIPrefix();
+$URIPrefix = Http::getEnvironmentValue('URI_PREFIX', '/mytinytodo');
 
 /* ===================================================================================================================== */
 
@@ -148,6 +148,7 @@ $container = new Container();
 
 /* ===================================================================================================================== */
 
+$container->add(HomeController::class)->addArgument($URIPrefix);
 $container->add(ListsController::class)->addArgument($log);
 $container->add(TasksController::class)->addArgument($log);
 $container->add(TagsController::class)->addArgument($log);

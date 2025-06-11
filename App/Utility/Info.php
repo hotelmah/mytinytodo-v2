@@ -72,10 +72,10 @@ class Info extends UrlPath
                 if ($_mttinfo['api_url'] == '') {
                     if (true) {
                         // $_mttinfo['api_url'] = self::getUnsafeMttinfo('mtt_uri') . 'api/';
-                        $_mttinfo['api_url'] = Http::getURIPrefix() . '/api/';
+                        $_mttinfo['api_url'] = Http::getEnvironmentValue('URI_PREFIX', '/mytinytodo') . '/api/';
                     } else {
                         // $_mttinfo['api_url'] = self::getUnsafeMttinfo('mtt_uri') . 'api?_path=/';
-                        $_mttinfo['api_url'] = Http::getURIPrefix() . '/api?_path=/';
+                        $_mttinfo['api_url'] = Http::getEnvironmentValue('URI_PREFIX', '/mytinytodo') . '/api?_path=/';
                     }
                 }
 

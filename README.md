@@ -32,15 +32,12 @@ The RSS Feed feature may not be working properly.
 ## Windows as Your Development Environment
 
 This is due to testing with IIS. I ran this App from a sub-directory and had the web root one level up.
+In index.php, the `$URIPrefix` variable has a default value of `/mytinytodo`.
+In production, the .htaccess file should read an empty URI_PREFIX, or you can set this if you run the app from a sub-directory
+and you choose not to use a sub-domain which would effectively run the App in the root where a sub-directory is not used.
 
-For the Current Command Prompt Session:
-`set MTT_ENV=development`
-
-For a PowerShell Session:
-`$env:MTT_ENV = "development"`
-
-In production, on a LAMP host, the .htaccess contains this Environment Variable:
-`SetEnv MTT_ENV production`
+In production, on a LAMP host, the .htaccess contains this Environment Variable, URI_PREFIX with a value of an empty string:
+`SetEnv URI_PREFIX`
 
 ## Future Updates
 
