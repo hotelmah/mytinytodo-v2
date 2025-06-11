@@ -12,7 +12,7 @@
 /* light colors */
 
 :root {
-    --color-bg: #fff;
+    --color-bg: hsl(223, 10%, 90%);
     --color-text-default: #000;
     --color-text-reduced: #222;
     --color-text-reduced2: #666;
@@ -35,9 +35,6 @@
     --color-input-bg: #fff;
 
     --color-bg-mtt: #fbf4f4;
-
-    --hue: 223;
-    --bg: hsl(var(--hue), 10%, 90%);
 
     /* --color-toolbar: hsl(188, 65%, 82%); */
     --color-toolbar: #cef0bc;
@@ -225,7 +222,7 @@ button {
     margin-bottom: 12px;
     box-sizing: border-box;
 
-    background-color: var(--bg);
+    background-color: var(--color-bg);
 
     border-width: 1px;
     border-style: solid;

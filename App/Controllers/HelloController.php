@@ -5,9 +5,7 @@ namespace App\Controllers;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
-use Monolog\Level;
 use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 
 class HelloController extends BaseController
 {
@@ -51,7 +49,7 @@ class HelloController extends BaseController
     {
         $psr17Factory = new Psr17Factory();
 
-        $responseBody = $psr17Factory->createStream(self::getView('hello', ['name' => $request->getQueryParams()['name']]));
+        $responseBody = $psr17Factory->createStream(self::getView('hello', ['name' => $request->getQueryParams()['name'] ?? '']));
         return $psr17Factory->createResponse(200)->withBody($responseBody)->withHeader('Content-type', 'text/html; charset=utf-8');
     }
 }

@@ -100,6 +100,7 @@ function js_options()
                     <div class="msg-details"></div>
                 </div>
                 <div class="bar-menu">
+                    <a href="<?= $URIPrefix ?>/hello?name=My Tiny Todo" class="mtt-only-authorized">hello</a>
                     <a href="#settings" class="mtt-only-authorized" data-settings-link="index"><?php Formatter::_e('a_settings'); ?></a>
                     <span id="bar_public" style="display:none" class="mtt-need-auth-enabled"><?php Formatter::_e('public_tasks'); ?></span>
                     <a href="#login" id="login_btn" class="mtt-need-auth-enabled"><?php Formatter::_e('a_login'); ?></a>
